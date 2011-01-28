@@ -1,0 +1,12 @@
+#!/bin/sh
+ZEF_DATE="`date`"
+
+echo "*** Copying kernel and module files..."
+./cpkernel && \
+echo "*** Building ramdisk for boot.img..."
+cd ../ramdisk && \
+../mkoptinitrd && \
+echo "*** Building boot.img..."
+cd ../buildboot && \
+./mkbootimg.sh
+

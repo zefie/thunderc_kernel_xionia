@@ -1,0 +1,16 @@
+#!/bin/sh
+echo "*** Cleaning up all generated files..."
+rm -f ../buildboot/zImage
+rm -f ../buildboot/*.lzma
+rm -f ../kernel_updatezip_template-anykernel/kernel/zImage
+rm -f ../kernel_updatezip_template-anykernel/system/lib/modules/*
+rm -f ../ramdisk/lib/modules/*
+rm -f ../ramdisk_public/lib/modules/*
+rm -f ../kernel_updatezip_template/system/lib/modules/*
+rm -f ../kernel_updatezip_template/kernel/boot.img
+rm -f ../kernel_updatezip_template/kernel/zImage
+rm -f ../kernel_updatezip_template/META-INF/com/google/android/updater-script
+rm -f /tmp/kernel.zip
+rm -f /tmp/kernel2.zip
+rm -f /media/dropbox/xionia_kernel_XXX_bootimg.zip
+rm -f /media/dropbox/xionia_kernel_XXX_experimental.zip
