@@ -226,6 +226,10 @@ static unsigned int saved_count = -1;
 static void mcs6000_work(struct work_struct *work)
 {
 	int x1=0, y1 = 0;
+	static int flipy=0;
+	static int flipx=0;
+	static int flipdx=1;
+	static int flipdy=1;
 #ifdef LG_FW_MULTI_TOUCH
 	int x2=0, y2 = 0, z1 = 0, z2 = 0;
 	static int pre_x1, pre_x2, pre_y1, pre_y2, pre_z1, pre_z2;
@@ -351,6 +355,30 @@ static void mcs6000_work(struct work_struct *work)
 			*/
 #ifdef LG_FW_MULTI_TOUCH
 			if(input_type == MULTI_POINT_TOUCH) {
+                                //flipping x and y of points (the axis inverse workaround)
+                                if(abs(y1-y2) <= 35 && flipdx ){
+				 y1=y2; //trying to make the process smoother
+				 flipx=!flipx;
+				 flipdx=0;
+				}
+				if(abs(x1-x2) <= 35 && flipdy ){
+                                
+				 x1=x2; //trying to make the process smoother 
+				 flipy=!flipy;
+				 flipdy=0;
+				}
+				
+				if(flipx)
+				 swap(x1,x2); 
+
+				if(flipy)
+				 swap(y1,y2);
+
+				if(abs(y1-y2) > 35)
+				 flipdx=1; 
+
+				if(abs(x1-x2) > 35)
+				 flipdy=1; 
 				mcs6000_multi_ts_event_touch(x1, y1, z1, x2, y2, z2, PRESSED, dev);
 				pre_x1 = x1;
 				pre_y1 = y1;
