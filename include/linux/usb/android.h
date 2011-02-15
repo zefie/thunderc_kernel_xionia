@@ -39,8 +39,6 @@ struct android_usb_platform_data {
 	char *product_name;
 	char *manufacturer_name;
 
-	/* number of LUNS for mass storage function */
-	int nluns;
 	int self_powered;
 };
 /* composition support structure */

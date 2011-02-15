@@ -995,15 +995,14 @@ static long kgsl_ioctl_sharedmem_from_vmalloc(struct kgsl_file_private *private,
 		goto error;
 	}
 
-	if ((private->vmalloc_size + len) > KGSL_GRAPHICS_MEMORY_LOW_WATERMARK
-	    && !param.force_no_low_watermark) {
-		result = -ENOMEM;
-		goto error;
-	}
-
 	list_for_each_entry_safe(entry, entry_tmp,
 				&private->preserve_entry_list, list) {
-		if (entry->memdesc.size == len) {
+		/* make sure that read only pages aren't accidently
+		 * used when read-write pages are requested
+		 */
+		if (entry->memdesc.size == len &&
+		    ((entry->memdesc.priv & KGSL_MEMFLAGS_GPUREADONLY) ==
+		    (param.flags & KGSL_MEMFLAGS_GPUREADONLY))) {
 			list_del(&entry->list);
 			found = 1;
 			break;
@@ -1030,7 +1029,9 @@ static long kgsl_ioctl_sharedmem_from_vmalloc(struct kgsl_file_private *private,
 		result =
 		    kgsl_mmu_map(private->pagetable,
 			(unsigned long)vmalloc_area, len,
-			GSL_PT_PAGE_RV | GSL_PT_PAGE_WV,
+			GSL_PT_PAGE_RV |
+			((param.flags & KGSL_MEMFLAGS_GPUREADONLY) ?
+			0 : GSL_PT_PAGE_WV),
 			&entry->memdesc.gpuaddr, KGSL_MEMFLAGS_ALIGN4K |
 						KGSL_MEMFLAGS_VMALLOC_MEM);
 		if (result != 0)
@@ -1039,7 +1040,8 @@ static long kgsl_ioctl_sharedmem_from_vmalloc(struct kgsl_file_private *private,
 		entry->memdesc.pagetable = private->pagetable;
 		entry->memdesc.size = len;
 		entry->memdesc.priv = KGSL_MEMFLAGS_VMALLOC_MEM |
-			    KGSL_MEMFLAGS_CACHE_CLEAN;
+			    KGSL_MEMFLAGS_CACHE_CLEAN |
+			    (param.flags & KGSL_MEMFLAGS_GPUREADONLY);
 		entry->memdesc.physaddr = (unsigned long)vmalloc_area;
 		entry->priv = private;
 		private->vmalloc_size += len;

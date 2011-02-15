@@ -102,7 +102,6 @@ struct android_dev {
 	int version;
 
 	int adb_enabled;
-	int nluns;
 	struct mutex lock;
 	struct android_usb_platform_data *pdata;
 	unsigned long functions;
@@ -209,8 +208,7 @@ static int  android_bind_config(struct usb_configuration *c)
 				return ret;
 			break;
 		case ANDROID_MSC:
-			ret = mass_storage_function_add(dev->cdev, c,
-								dev->nluns);
+			ret = mass_storage_function_add(dev->cdev, c);
 			if (ret)
 				return ret;
 			break;
@@ -635,7 +633,6 @@ static int __init android_probe(struct platform_device *pdev)
 	strings_dev[STRING_PRODUCT_IDX].s = pdata->product_name;
 	strings_dev[STRING_MANUFACTURER_IDX].s = pdata->manufacturer_name;
 	strings_dev[STRING_SERIAL_IDX].s = serial_number;
-	dev->nluns = pdata->nluns;
 	dev->pdata = pdata;
 
 	ret = sysfs_create_group(&pdev->dev.kobj, &android_attr_grp);

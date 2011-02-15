@@ -53,9 +53,10 @@ static unsigned int poolsize_hdlc = 8;  /*Number of items in the mempool */
 /* for usb structure buffer */
 static unsigned int itemsize_usb_struct = 20; /*Size of item in the mempool */
 static unsigned int poolsize_usb_struct = 8; /*Number of items in the mempool */
-/* This is the maximum number of user-space clients supported */
+/* This is the max number of user-space clients supported */
 static unsigned int max_clients = 15;
 static unsigned int threshold_client_limit = 30;
+
 /* Timer variables */
 struct timer_list drain_timer;
 int timer_in_progress;
@@ -249,14 +250,15 @@ static int diagchar_ioctl(struct inode *inode, struct file *filp,
 
 		for (i = 0; i < REG_TABLE_SIZE; i++) {
 			if (driver->table[i].process_id == 0) {
+				
 				driver->table[i].cmd_code =
-					 pkt_params->params->cmd_code;
+					pkt_params->params->cmd_code;
 				driver->table[i].subsys_id =
-					 pkt_params->params->subsys_id;
+					pkt_params->params->subsys_id;
 				driver->table[i].cmd_code_lo =
-					 pkt_params->params->cmd_code_hi;
+					pkt_params->params->cmd_code_hi;
 				driver->table[i].cmd_code_hi =
-					 pkt_params->params->cmd_code_lo;
+					pkt_params->params->cmd_code_lo;
 				driver->table[i].process_id = current->tgid;
 				count_entries++;
 				if (pkt_params->count > count_entries)
@@ -265,6 +267,7 @@ static int diagchar_ioctl(struct inode *inode, struct file *filp,
 					return -EINVAL;
 			}
 		}
+		
 		success = 0;
 	} else if (iocmd == DIAG_IOCTL_GET_DELAYED_RSP_ID) {
 		struct diagpkt_delay_params *delay_params =

@@ -322,7 +322,7 @@ void __init msm_add_kgsl_device(void)
 	kgsl_pdata.set_grp3d_async = NULL;
 	kgsl_pdata.imem_clk_name = "imem_clk";
 	kgsl_pdata.grp3d_clk_name = "grp_clk";
-	kgsl_pdata.grp2d_clk_name = NULL;
+//	kgsl_pdata.grp2d_clk_name = NULL;
 #endif
 
 	platform_device_register(&msm_device_kgsl);
@@ -656,7 +656,7 @@ __WEAK struct android_usb_platform_data android_usb_pdata = {
 	.num_compositions = ARRAY_SIZE(usb_func_composition),
 	.product_name	= "Qualcomm HSUSB Device",
 	.manufacturer_name = "Qualcomm Incorporated",
-	.nluns = 1,
+	
 };
 static struct platform_device android_usb_device = {
 	.name	= "android_usb",

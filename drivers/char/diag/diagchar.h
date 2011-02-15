@@ -63,6 +63,9 @@
 #define REG_TABLE_SIZE 25
 #define PKT_SIZE 4096
 
+extern unsigned int diag_max_registration;
+extern unsigned int diag_threshold_registration;
+
 #define APPEND_DEBUG(ch) \
 do {							\
 	diag_debug_buf[diag_debug_buf_idx] = ch; \
