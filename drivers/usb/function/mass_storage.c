@@ -2740,6 +2740,7 @@ static void fsg_bind(void *_ctxt)
 #if defined(CONFIG_LGE_UMS_WORKAROUND_PATCH)
 	int nCount = 0;
 
+	
 	while(fsg->thread_task != NULL)
 	{
 		msleep(10);
@@ -2748,6 +2749,7 @@ static void fsg_bind(void *_ctxt)
 		if( nCount++ > 20)
 			break;
 	}
+	
 #endif
 
 	dev_attr_file.attr.mode = 0644;

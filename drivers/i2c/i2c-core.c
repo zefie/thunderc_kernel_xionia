@@ -261,12 +261,7 @@ struct bus_type i2c_bus_type = {
 	.shutdown	= i2c_device_shutdown,
 	.suspend	= i2c_device_suspend,
 	.resume		= i2c_device_resume,
-	// FIXME: not working the suspend/resume if defined pm_ops
-#if defined(CONFIG_MACH_LGE)
-	// nothing 
-#else
 	.pm		= &i2c_device_pm_ops,
-#endif
 };
 EXPORT_SYMBOL_GPL(i2c_bus_type);
 

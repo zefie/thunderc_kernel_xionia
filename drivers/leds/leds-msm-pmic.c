@@ -29,6 +29,7 @@
 
 struct msm_pmic_leds_pdata *leds_pdata = 0;
 #endif
+
 /* from 0 to 150 mA in 10 mA increments */
 //#define MAX_KEYPAD_BL_LEVEL	16  /* 15: 150 mA */
 //#define MAX_KEYPAD_BL_LEVEL	127 /* 2: 20 mA */

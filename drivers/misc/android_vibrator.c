@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 LGE, Inc.
  *
- * Author: Jinkyu Choi <jinkyu@lge.com>
+ * 
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -177,6 +177,7 @@ static int vibrator_get_time(struct timed_output_dev *dev)
 static void vibrator_enable(struct timed_output_dev *dev, int value)
 {
 	//struct timed_vibrator_data *data = container_of(dev, 
+	//		struct timed_vibrator_data, dev);
 	struct timed_vibrator_data *data = (void *)NULL;
 	unsigned long	flags;
 #ifdef CONFIG_VIB_USE_HIGH_VOL_OVERDRIVE

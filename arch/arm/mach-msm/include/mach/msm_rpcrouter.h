@@ -48,7 +48,7 @@ struct rpcsvr_platform_device
 	uint32_t vers;
 };
 
-/* Factory AT CMD feature added based on EVE */
+
 #ifdef CONFIG_MACH_LGE
 typedef uint8_t   AT_STR_t;
 #define ABSOLUTE_STRING_LENGTH  500 //40 
@@ -67,6 +67,7 @@ struct retvaluestruct
 	AT_STR_t   ret_string[MAX_STRING_RET];
 };
 #endif
+
 
 #define RPC_DATA_IN	0
 /*
@@ -111,7 +112,7 @@ typedef struct
 #define RPC_ACCEPTSTAT_SYSTEM_ERR 5
 #define RPC_ACCEPTSTAT_PROG_LOCKED 6
 
-/* Factory AT CMD feature added based on EVE */
+
 #ifdef CONFIG_MACH_LGE
 #define RPC_RETURN_RESULT_ERROR    7
 #define RPC_RETURN_RESULT_OK     8
@@ -127,7 +128,7 @@ typedef struct
 	 */
 } rpc_accepted_reply_hdr;
 
-/* Factory AT CMD feature added based on EVE */
+
 #ifdef CONFIG_MACH_LGE
 typedef struct
 {
@@ -157,6 +158,7 @@ struct retvaluestruct retvalues;
 } rpc_accepted_AT_reply_hdr;
 #endif
 
+
 struct rpc_reply_hdr
 {
 	uint32_t xid;
@@ -170,7 +172,7 @@ struct rpc_reply_hdr
 	} data;
 };
 
-/* Factory AT CMD feature added based on EVE */
+
 #ifdef CONFIG_MACH_LGE
 struct rpc_reply_AT_hdr
 {
@@ -182,6 +184,7 @@ struct retvaluestruct retvalues;
 
 };
 #endif
+
 
 struct rpc_board_dev {
 	uint32_t prog;
@@ -287,7 +290,7 @@ struct msm_rpc_server
 					 struct rpc_request_hdr *req,
 					 struct msm_rpc_xdr *xdr);
 
-	/* Factory AT CMD feature added based on EVE */
+	
 #ifdef CONFIG_MACH_LGE
 	struct retvaluestruct  retvalue;
 #endif

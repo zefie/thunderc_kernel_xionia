@@ -2,41 +2,7 @@
 ZEF_DATE="`date`"
 
 ./cpkernel-cm && \
-cd ../ramdisk_cm && \
-../mkoptinitrd && \
-cd ../buildboot && \
+cd ../ramdisk_cyanogen-ginger && \
+/home/zefie/optimusdev/optimus/mkoptinitrd && \
+cd /home/zefie/optimusdev/optimus/buildboot && \
 ./mkbootimg.sh
-
-cd /home/xionia/optimus/kernel_updatezip_template
-rm META-INF/com/google/android/updater-script
-
-echo "ui_print(\"AnyKernel Updater by Koush.\");" > META-INF/com/google/android/updater-script
-echo "ui_print(\"Extracting System Files...\");" >> META-INF/com/google/android/updater-script
-echo "set_progress(1.000000);" >> META-INF/com/google/android/updater-script
-echo "mount(\"MTD\", \"system\", \"/system\");" >> META-INF/com/google/android/updater-script
-echo "package_extract_dir(\"system\", \"/system\");" >> META-INF/com/google/android/updater-script
-echo "unmount(\"/system\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"Extracting Kernel files...\");" >> META-INF/com/google/android/updater-script
-echo "package_extract_dir(\"kernel\", \"/tmp\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"Installing kernel...\");" >> META-INF/com/google/android/updater-script
-echo "set_perm(0, 0, 0777, \"/tmp/dump_image\");" >> META-INF/com/google/android/updater-script
-echo "set_perm(0, 0, 0777, \"/tmp/mkbootimg.sh\");" >> META-INF/com/google/android/updater-script
-echo "set_perm(0, 0, 0777, \"/tmp/mkbootimg\");" >> META-INF/com/google/android/updater-script
-echo "set_perm(0, 0, 0777, \"/tmp/unpackbootimg\");" >> META-INF/com/google/android/updater-script
-echo "run_program(\"/tmp/dump_image\", \"boot\", \"/tmp/boot.img\");" >> META-INF/com/google/android/updater-script
-echo "run_program(\"/tmp/unpackbootimg\", \"/tmp/boot.img\", \"/tmp/\");" >> META-INF/com/google/android/updater-script
-echo "run_program(\"/tmp/mkbootimg.sh\");" >> META-INF/com/google/android/updater-script
-echo "write_raw_image(\"/tmp/newboot.img\", \"boot\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"Zefie's Test Kernel\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"-------------------\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"Generated on:\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"$ZEF_DATE\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"-------------------\");" >> META-INF/com/google/android/updater-script
-echo "ui_print(\"Done!\");" >> META-INF/com/google/android/updater-script
-
-zip -9rq /tmp/kernel.zip *
-
-rm /media/shared/zefie_test.zip
-/opt/java/jre1.6.0_22/bin/java -jar /home/xionia/optimus/java/signapk.jar /home/xionia/optimus/java/testkey.x509.pem /home/xionia/optimus/java/testkey.pk8 /tmp/kernel.zip /media/shared/zefie_test.zip
-rm /tmp/kernel.zip
-ls -l /media/shared/zefie_test.zip

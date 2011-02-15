@@ -32,6 +32,15 @@
 #include <mach/board_lge.h> // platform data
 #include <linux/akm8973.h>	// akm daemon ioctl set
 
+#undef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+#include <linux/earlysuspend.h>
+
+struct early_suspend kr3dm_sensor_early_suspend;
+
+static void kr3dm_early_suspend(struct early_suspend *h);
+static void kr3dm_late_resume(struct early_suspend *h);
+#endif
 #define USE_WORK_QUEUE        0
 
 /** Maximum polled-device-reported g value */
@@ -333,7 +342,6 @@ static int kr3dm_get_acceleration_data(struct kr3dm_data *kr, int *xyz)
 	/* Data bytes from hardware xL, xH, yL, yH, zL, zH */
 	u8 acc_data[6];
 
-#if 1
 	acc_data[0] = OUT_X;
 	acc_data[1] = OUT_Y;
 	acc_data[2] = OUT_Z;
@@ -350,38 +358,6 @@ static int kr3dm_get_acceleration_data(struct kr3dm_data *kr, int *xyz)
 	kr3dm_xyz[0] = (unsigned char)(acc_data[0]);
 	kr3dm_xyz[1] = (unsigned char)(acc_data[1]);
 	kr3dm_xyz[2] = (unsigned char)(acc_data[2]);
-#else
-	/* x,y,z hardware data */
-	int hw_d[3] = { 0 };
-
-	acc_data[0] = (AUTO_INCREMENT | AXISDATA_REG);
-	err = kr3dm_i2c_read(kr, acc_data, 6);
-	if (err < 0)
-		return err;
-
-	hw_d[0] = (int) (((acc_data[1]) << 8) | acc_data[0]);
-	hw_d[1] = (int) (((acc_data[3]) << 8) | acc_data[2]);
-	hw_d[2] = (int) (((acc_data[5]) << 8) | acc_data[4]);
-
-	kr3dm_xyz[0] = (unsigned char)(hw_d[0]);
-	kr3dm_xyz[1] = (unsigned char)(hw_d[1]);
-	kr3dm_xyz[2] = (unsigned char)(hw_d[2]);
-
-	hw_d[0] = (hw_d[0] & 0x8000) ? (hw_d[0] | 0xFFFF0000) : (hw_d[0]);
-	hw_d[1] = (hw_d[1] & 0x8000) ? (hw_d[1] | 0xFFFF0000) : (hw_d[1]);
-	hw_d[2] = (hw_d[2] & 0x8000) ? (hw_d[2] | 0xFFFF0000) : (hw_d[2]);
-
-	hw_d[0] >>= kr->shift_adj;
-	hw_d[1] >>= kr->shift_adj;
-	hw_d[2] >>= kr->shift_adj;
-
-	xyz[0] = ((kr->pdata->negate_x) ? (-hw_d[kr->pdata->axis_map_x])
-		  : (hw_d[kr->pdata->axis_map_x]));
-	xyz[1] = ((kr->pdata->negate_y) ? (-hw_d[kr->pdata->axis_map_y])
-		  : (hw_d[kr->pdata->axis_map_y]));
-	xyz[2] = ((kr->pdata->negate_z) ? (-hw_d[kr->pdata->axis_map_z])
-		  : (hw_d[kr->pdata->axis_map_z]));
-#endif
 
 	//dev_info(&kr->client->dev, "(x, y ,z) = (%d, %d, %d)\n", xyz[0],xyz[1], xyz[2]);
 
@@ -803,6 +779,13 @@ static int kr3dm_probe(struct i2c_client *client,
 		goto err4;
 	}
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	kr3dm_sensor_early_suspend.suspend = kr3dm_early_suspend;
+	kr3dm_sensor_early_suspend.resume = kr3dm_late_resume;
+	kr3dm_sensor_early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN - 45;
+	register_early_suspend(&kr3dm_sensor_early_suspend);
+#endif
+
 #if 0
 	kr3dm_device_power_off(kr);
 
@@ -849,24 +832,44 @@ static int __devexit kr3dm_remove(struct i2c_client *client)
 	kfree(kr->pdata);
 	kfree(kr);
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&kr3dm_sensor_early_suspend);
+#endif
+
 	return 0;
 }
 
-static int kr3dm_resume(struct i2c_client *client)
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+static void kr3dm_early_suspend(struct early_suspend *h)
 {
+	kr3dm_disable(kr3dm_misc_data);
+}
+
+static void kr3dm_late_resume(struct early_suspend *h)
+{
+	kr3dm_enable(kr3dm_misc_data);
+}
+#endif
+
+#if defined(CONFIG_PM)
+static int kr3dm_resume(struct device *device)
+{
+	struct i2c_client *client = i2c_verify_client(device);
 	struct kr3dm_data *kr = i2c_get_clientdata(client);
 
 	kr->pdata->gpio_config(1);
 	return kr3dm_enable(kr);
 }
 
-static int kr3dm_suspend(struct i2c_client *client, pm_message_t mesg)
+static int kr3dm_suspend(struct device *device)
 {
+	struct i2c_client *client = i2c_verify_client(device);
 	struct kr3dm_data *kr = i2c_get_clientdata(client);
 
 	kr->pdata->gpio_config(0);
 	return kr3dm_disable(kr);
 }
+#endif
 
 static const struct i2c_device_id kr3dm_id[] = {
 	{"KR3DM", 0},
@@ -875,14 +878,22 @@ static const struct i2c_device_id kr3dm_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, kr3dm_id);
 
+#if defined(CONFIG_PM)
+static struct dev_pm_ops kr3dm_pm_ops = {
+       .suspend = kr3dm_suspend,
+       .resume = kr3dm_resume,
+};
+#endif
+
 static struct i2c_driver kr3dm_driver = {
 	.driver = {
 		.name = "KR3DM",
+#if defined(CONFIG_PM)
+		.pm = &kr3dm_pm_ops,
+#endif
 	},
 	.probe = kr3dm_probe,
 	.remove = __devexit_p(kr3dm_remove),
-	.resume = kr3dm_resume,
-	.suspend = kr3dm_suspend,
 	.id_table = kr3dm_id,
 };
 

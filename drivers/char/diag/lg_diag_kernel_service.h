@@ -3,6 +3,7 @@
 
 #include <mach/lg_comdef.h>
 
+//#define LG_DIAG_DEBUG
 
 #define DIAGPKT_HDR_PATTERN (0xDEADD00DU)
 #define DIAGPKT_OVERRUN_PATTERN (0xDEADU)
@@ -103,6 +104,7 @@ typedef struct
   unsigned int pattern;     /* Pattern to check validity of committed pointers. */
   unsigned int size;        /* Size of usable buffer (diagpkt_q_type->pkt) */
   unsigned int length;      /* Size of packet */
+
 
 #if defined (CONFIG_MACH_MSM7X27_THUNDERC) || defined (LG_FW_DIAG_SCREEN_CAPTURE) || defined (LG_FW_MTC)
   byte pkt[4096];               /*LG_FW size up*/

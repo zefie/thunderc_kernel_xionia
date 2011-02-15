@@ -36,7 +36,7 @@ init_reg_settings_array[] = {
 
 	{0x00FC, 0x1F   ,BYTE_LEN},		//   
  	{0x000b, 0x02, BYTE_LEN},		// PLL_CKSEL    
-	{0x3208, 0x01   ,BYTE_LEN},		// 
+	{0x3208, 0x01   ,BYTE_LEN},		// [LGE_CODE] 
  	{0x0009, 0x06   ,BYTE_LEN},		// INCK_SET 
 	{0x02C7, 0x01, BYTE_LEN},		// SRCCK_DIV 
  	{0x0038, 0x0D  ,BYTE_LEN},		// sync masking on off   - for QCT      
@@ -333,6 +333,7 @@ init_reg_settings_array[] = {
 	{0xB116, 0x1800   ,WORD_LEN},
 	{0xB118, 0x40EC   ,WORD_LEN},
 	{0xB11A, 0x3000   ,WORD_LEN},
+	
 	{0x0009, 0x16   ,BYTE_LEN},
 
 
@@ -1825,7 +1826,6 @@ tuning_reg_settings_array[] = {	//091214
 	{0x4838,0x1600,WORD_LEN},
 	{0x4844,0x5000,WORD_LEN},
 	{0x484F,0x00,BYTE_LEN},
-	//{0x4856,0x14,BYTE_LEN},	
 	{0x4856,0x28,BYTE_LEN},
 	{0x486A,0x6400,WORD_LEN},
 	{0x486C,0x2800,WORD_LEN},
@@ -2846,36 +2846,6 @@ preview_mode_reg_settings_array[] = {
 #define ISX005_CAPTURE_SIZE_WIDTH		0x0008	//0x0280	//0x0500	// 1280
 #define ISX005_CAPTURE_SIZE_HIGHT		0x0006	//0x01E0	//0x03C0	//  960
 
-static struct isx005_register_address_value_pair const
-effect_off_reg_settings_array[] = {
-
-	//
-	// effect off mode Setting
-	//
-	{0x005F, 0x00,BYTE_LEN},	// fmode [2:0]  00 : off             
-	//{0x4A08, 0x5a01,WORD_LEN},//3200k r gain adjust this using the pre-white balance function of the adjustment mode.
-	{0x4A08, 0x3D01,WORD_LEN},//3200k r gain adjust this using the pre-white balance function of the adjustment mode.
-	{0x4A0a, 0x4602,WORD_LEN},//3200k b gain adjust this using the pre-white balance function of the adjustment mode.
-	{0x01b1, 0x80,BYTE_LEN},		// uisaturation_type1 :
-	{0x0060, 0x00,BYTE_LEN},		 // uibrightness[7:0]
-	{0x0061, 0x80,BYTE_LEN},		 // uicontrast[7:0] 
-	{0x0062, 0x52,BYTE_LEN},             
-               
-};
-
-static struct isx005_register_address_value_pair const
-effect_aqua_reg_settings_array[] = {
-
-	//
-	// Aqua effect mode Setting
-	//	              
-	{0x005F, 0x00,BYTE_LEN},// fmode [2:0]  00 : off             
-	{0x4A08, 0x6000,WORD_LEN}, // awbprer : 
-	{0x4A0a, 0x0005,WORD_LEN}, // awbprer : 
-	{0x01b1, 0x80,BYTE_LEN},		// uisaturation_type1 :
-	{0x0060, 0x00,BYTE_LEN},		 // uibrightness[7:0]
-	{0x0061, 0x80,BYTE_LEN},		 // uicontrast[7:0] 
-};
 
 
 static struct isx005_register_address_value_pair const
@@ -2903,6 +2873,41 @@ static struct isx005_register_address_value_pair const
 af_normal_mode_reg_settings_array[] =
 {
 	{0x00FC, 0x1F, BYTE_LEN},
+	{0x487A, 0x3200,WORD_LEN},
+	{0x487C, 0x9A01,WORD_LEN},
+	{0x01D3, 0x04, BYTE_LEN},	//AF_SN1
+	{0x01D4, 0x04, BYTE_LEN},	//AF_SN2
+	{0x01D5, 0x04, BYTE_LEN},	//AF_SN3
+	{0x01D6, 0x04, BYTE_LEN},	//AF_SN4
+	{0x01D7, 0x04, BYTE_LEN},	//AF_SN5
+	{0x01D8, 0x04, BYTE_LEN},	//AF_SN6
+	{0x01D9, 0x04, BYTE_LEN},	//AF_SN7
+	{0x01DA, 0x04, BYTE_LEN},	//AF_SN8
+	{0x01DB, 0x04, BYTE_LEN},	//AF_SN9
+	{0x01DC, 0x04, BYTE_LEN},	//AF_SN10
+	{0x01DD, 0x04, BYTE_LEN},	//AF_SN11
+	{0x01DE, 0x04, BYTE_LEN},	//AF_SN12
+	
+	{0x4C4C,0x1003,WORD_LEN},
+	{0x4C4E,0x1002,WORD_LEN},
+	{0x4C50,0x5002,WORD_LEN},
+	{0x4C52,0x5002,WORD_LEN},
+	{0x4C54,0xEE02,WORD_LEN},
+	{0x4C56,0xEE01,WORD_LEN},
+	{0x4C58,0xA002,WORD_LEN},
+	{0x4C5A,0xA002,WORD_LEN},
+	{0x4856,0x14,BYTE_LEN},
+	{0x4857,0x0a,BYTE_LEN},	
+	{0x4844,0x5000,WORD_LEN},
+
+};
+
+static struct isx005_register_address_value_pair const
+af_auto_mode_reg_settings_array[] =
+{
+	{0x00FC, 0x1F, BYTE_LEN},	
+	{0x487A, 0x3200,WORD_LEN},
+    {0x487C, 0x4402,WORD_LEN},	
 	{0x01D3, 0x04, BYTE_LEN},	//AF_SN1
 	{0x01D4, 0x04, BYTE_LEN},	//AF_SN2
 	{0x01D5, 0x04, BYTE_LEN},	//AF_SN3
@@ -2929,7 +2934,7 @@ af_normal_mode_reg_settings_array[] =
 	{0x002E, 0x02, BYTE_LEN},
 	{0x0012, 0x01, BYTE_LEN},
 	{0x4852, 0x3200, WORD_LEN},	
-	{0x4850, 0x01, BYTE_LEN},
+	{0x4850, 0x01, BYTE_LEN},		
 };
 
 static struct isx005_register_address_value_pair const
@@ -3107,14 +3112,12 @@ struct isx005_reg isx005_regs = {
 	.snap_reg_settings_size = ARRAY_SIZE(
 		snapshot_mode_reg_settings_array),
 		
-	.effect_off_reg_settings = effect_off_reg_settings_array,
-	.effect_off_reg_settings_size = ARRAY_SIZE(	effect_off_reg_settings_array),
-	.effect_aqua_reg_settings = effect_aqua_reg_settings_array,
-	.effect_aqua_reg_settings_size= ARRAY_SIZE(	effect_aqua_reg_settings_array),
-
 	.af_normal_reg_settings = af_normal_mode_reg_settings_array,
 	.af_normal_reg_settings_size = ARRAY_SIZE(
 		af_normal_mode_reg_settings_array),
+	.af_auto_reg_settings = af_auto_mode_reg_settings_array,
+	.af_auto_reg_settings_size = ARRAY_SIZE(
+		af_auto_mode_reg_settings_array),
 	.af_macro_reg_settings = af_macro_mode_reg_settings_array,
 	.af_macro_reg_settings_size = ARRAY_SIZE(
 		af_macro_mode_reg_settings_array),

@@ -143,9 +143,11 @@ extern int msm_chg_LG_cable_type(void);
 #define LG_FACTORY_CABLE_130K_TYPE      10
 #endif
 
+
 #if defined (CONFIG_MACH_MSM7X27_THUNDERC)
 struct wake_lock battery_wake_lock;
 #endif
+
 
 enum {
 	BATTERY_REGISTRATION_SUCCESSFUL = 0,
@@ -171,9 +173,7 @@ enum {
 	BATTERY_VOLTAGE_UNKNOWN,
 };
 
-/* 
- * add CHG_UI_EVENT_CHARGING_TIMER_EXPIRED (from VS740) 
- */
+
 enum {
 	CHG_UI_EVENT_IDLE,	/* Starting point, no charger.  */
 	CHG_UI_EVENT_NO_POWER,	/* No/Weak Battery + Weak Charger. */
@@ -235,23 +235,17 @@ struct msm_battery_info {
 	u32 charger_valid;
 	u32 batt_valid;
 	u32 batt_capacity;
-	/* 
-	 * LG_FW_BATT_INFO_TEMP 
-	 */
+	
 	u32 battery_temp;
-	/*  
-	 * LG_FW_BATT_ID_CHECK, LG_FW_BATT_THM 
-	 */
+	
 	u32 valid_battery_id;
 	u32 battery_therm;
-
-	/* 
-	 * add extra batt info (from LS680)
-	 */
+	
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 	u32 chg_current;
 	u32 batt_thrm_state;
 #endif
+	
 
 	 u32(*calculate_capacity) (u32 voltage);
 
@@ -292,9 +286,10 @@ static struct pseudo_batt_info_type pseudo_batt_info = {
 	.mode = 0,
 };
 
+
 static int block_charging_state = 1;  //1 : charging , 0: block charging
 
-// no stop charging even if hot or cold battery
+
 #if defined(CONFIG_LGE_THERM_NO_STOP_CHARGING)
 static int no_stop_charging = 0;
 #endif
@@ -307,9 +302,11 @@ static char *msm_power_supplied_to[] = {
 	"battery",
 };
 
+
 extern void set_charging_timer(int);
 extern void get_charging_timer(int *);
 int charging_timer_enable = -1;
+
 
 
 static int msm_power_get_property(struct power_supply *psy,
@@ -371,15 +368,19 @@ static enum power_supply_property msm_batt_power_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
+	
 	POWER_SUPPLY_PROP_TEMP,
+	
 	POWER_SUPPLY_PROP_BATTERY_ID_CHECK,
 	POWER_SUPPLY_PROP_BATTERY_TEMP_ADC,
 	POWER_SUPPLY_PROP_PSEUDO_BATT,
 	POWER_SUPPLY_PROP_CHARGING_TIMER,
+	
 	POWER_SUPPLY_PROP_BLOCK_CHARGING,
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_BATTERY_THRM_STATE,
+	
 	POWER_SUPPLY_PROP_THERM_NO_STOP_CHARGING
 #endif
 	
@@ -422,7 +423,6 @@ static int msm_batt_power_get_property(struct power_supply *psy,
 			else
 				val->intval = 0;
 		}
-		
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = msm_batt_info.batt_technology;
@@ -492,7 +492,7 @@ static int msm_batt_power_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_THERM_NO_STOP_CHARGING:
 		val->intval = no_stop_charging;
 		break;
-#endif 
+#endif /* CONFIG_LGE_THERM_NO_STOP_CHARGING */
 #endif
 		
 	case POWER_SUPPLY_PROP_CHARGING_TIMER:
@@ -556,6 +556,7 @@ int charging_timer_set(int intVal)
 {
 	set_charging_timer(intVal);
 	charging_timer_enable = intVal;
+	return 0;
 }
 EXPORT_SYMBOL(charging_timer_set);
 
@@ -792,8 +793,6 @@ static int msm_batt_get_batt_chg_status(u32 * batt_charging,
 
 	
 	battery_info_get((struct batt_info *)&batt_info_buf);
-	//printk(KERN_ERR "battery_info_get : auth_id=%d batt_therm_adc=%d batt_temp=%d\n",
-	//               batt_info_buf.valid_batt_id, batt_info_buf.batt_therm, batt_info_buf.batt_temp);        
 	
 
 	charger_hw_type = msm_hsusb_get_charger_type();
@@ -806,6 +805,19 @@ static void msm_batt_update_psy_status(void)
 	u32 batt_charging = 0;
 	u32 chg_batt_event = CHG_UI_EVENT_INVALID;
 	u32 charger_valid = 0;
+	
+#if defined(CONFIG_LGE_DETECT_PIF_PATCH)
+	static int pif_value = -1;
+
+	if (pif_value < 0) {
+		pif_value = msm_chg_LG_cable_type();
+		if (pif_value == LG_FACTORY_CABLE_TYPE ||
+		    pif_value == LG_FACTORY_CABLE_130K_TYPE)
+			pif_value = 1;
+		else
+			pif_value = 0;
+	}
+#endif
 
 	if (msm_batt_info.chg_api_version >= CHARGER_API_VERSION) {
 		msm_batt_get_batt_chg_status_v1(&batt_charging, &charger_valid,
@@ -861,6 +873,7 @@ static void msm_batt_update_psy_status(void)
 #if defined (CONFIG_MACH_MSM7X27_THUNDERC)
 		wake_lock_timeout(&battery_wake_lock, 5 * HZ);
 #endif
+		
 		msm_batt_info.charger_valid = charger_valid;
 		if (msm_batt_info.charger_valid
 		    && charger_hw_type == CHG_HOST_PC) {
@@ -876,9 +889,31 @@ static void msm_batt_update_psy_status(void)
 			msm_batt_info.current_chg_source &= ~(USB_CHG | AC_CHG);
 		}
 	}
+
+	
+#if defined(CONFIG_LGE_DETECT_PIF_PATCH)
+	if (1 == pif_value && 0 == msm_batt_info.valid_battery_id) {
+		msm_batt_info.batt_valid = 1; 
+		//msm_batt_info.valid_battery_id = 1;
+		msm_batt_info.batt_health = POWER_SUPPLY_HEALTH_GOOD;
+
+		msm_batt_info.voltage_now = 4200;
+		msm_batt_info.batt_capacity = 100;
+
+		msm_batt_info.batt_status = POWER_SUPPLY_STATUS_DISCHARGING;
+
+		
+		msm_batt_info.battery_temp = 29 * 10;
+		msm_batt_info.battery_therm = 88;
+		
+		msm_batt_info.chg_current = batt_info_buf.chg_current;
+		msm_batt_info.batt_thrm_state = batt_info_buf.batt_thrm_state;
+		
+	} 
+#endif
 	
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
-	if (msm_batt_info.batt_valid || 
+	else if (msm_batt_info.batt_valid || 
 	    msm_batt_info.valid_battery_id) {
 #else
 	if (msm_batt_info.batt_valid) {
@@ -895,9 +930,15 @@ static void msm_batt_update_psy_status(void)
 		else
 			msm_batt_info.batt_health = POWER_SUPPLY_HEALTH_GOOD;
 
-		if (batt_charging && msm_batt_info.charger_valid)
+		if (batt_charging && msm_batt_info.charger_valid) {
 			msm_batt_info.batt_status =
 			    POWER_SUPPLY_STATUS_CHARGING;
+			
+#if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
+			if (msm_batt_info.batt_capacity == 0)
+				msm_batt_info.batt_capacity++;
+#endif
+		}
 		else if (!batt_charging)
 			msm_batt_info.batt_status =
 			    POWER_SUPPLY_STATUS_DISCHARGING;
@@ -906,6 +947,7 @@ static void msm_batt_update_psy_status(void)
 			msm_batt_info.batt_status = POWER_SUPPLY_STATUS_FULL;
 			msm_batt_info.batt_capacity = 100;
 		}
+
 		
 		msm_batt_info.battery_temp = batt_info_buf.batt_temp * 10;
 		msm_batt_info.battery_therm = batt_info_buf.batt_therm;
@@ -915,7 +957,8 @@ static void msm_batt_update_psy_status(void)
 		msm_batt_info.batt_thrm_state = batt_info_buf.batt_thrm_state;
 #endif
 		
-	} else {
+	}
+	else {
 		msm_batt_info.batt_health = POWER_SUPPLY_HEALTH_UNKNOWN;
 		msm_batt_info.batt_status = POWER_SUPPLY_STATUS_UNKNOWN;
 
@@ -1151,7 +1194,7 @@ static ssize_t msm_batt_pif_show(struct device *dev, struct device_attribute *at
 static DEVICE_ATTR(pif, S_IRUGO, msm_batt_pif_show, NULL);
 #endif
 
-#if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
+
 #include <mach/lg_comdef.h> /* boolean */
 extern void set_operation_mode(boolean info);
 static ssize_t msm_batt_modem_lpm_store(struct device *dev, struct device_attribute *attr,
@@ -1187,18 +1230,49 @@ static ssize_t msm_batt_power_on_status_show(struct device *dev,
 }
 static DEVICE_ATTR(power_on_status, 0444, msm_batt_power_on_status_show, NULL);
 #endif //CONFIG_LGE_GET_POWER_ON_STATUS
-#endif
+
+extern void remote_set_charging_stat_realtime_update(int info);
+extern void remote_get_charging_stat_realtime_update(int *info);
+static ssize_t msm_batt_stat_realtime_update_store(
+		struct device *dev, struct device_attribute *attr, 
+		const char *buf, size_t count)
+{
+	int ret = -EINVAL;
+	int update;
+
+	if (sscanf(buf, "%d", &update) != 1) {
+		dev_err(dev, "%s: usage: echo [0/1] > stat_realtime_update", __func__);
+		return ret;
+	}
+
+	remote_set_charging_stat_realtime_update(update);
+
+	ret = count;
+	return ret;
+}
+
+static ssize_t msm_batt_stat_realtime_update_show(
+		struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int update = 0;
+
+	remote_get_charging_stat_realtime_update(&update);
+	dev_info(dev, "%s : state realtime update (%d)\n", __func__, update);
+
+	return sprintf(buf, "%d\n", update);
+}
+static DEVICE_ATTR(stat_realtime_update, 0666, msm_batt_stat_realtime_update_show, 
+		msm_batt_stat_realtime_update_store);
 
 static struct attribute* dev_attrs[] = {
 #if defined(CONFIG_LGE_DETECT_PIF_PATCH)
 	&dev_attr_pif.attr,
 #endif
-#if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 	&dev_attr_modem_lpm.attr,
 #if defined(CONFIG_LGE_GET_POWER_ON_STATUS)
 	&dev_attr_power_on_status.attr,
 #endif
-#endif
+	&dev_attr_stat_realtime_update.attr,
 	NULL
 };
 
@@ -1286,10 +1360,13 @@ static int __devinit msm_batt_probe(struct platform_device *pdev)
 
 	msm_batt_start_cb_thread();
 
+	
 #if defined (CONFIG_MACH_MSM7X27_THUNDERC)
 	wake_lock_init(&battery_wake_lock, WAKE_LOCK_SUSPEND, "msm_battery");
 #endif
+	
 
+	
 	rc = sysfs_create_group(&pdev->dev.kobj, &dev_attr_grp);
 	if(rc < 0) {
 		dev_err(&pdev->dev, "%s: pif sysfs create failed rc=%d\n", __func__, rc);

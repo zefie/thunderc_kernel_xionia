@@ -42,11 +42,13 @@
 #include "../devices.h"
 #include "../pm.h"
 
+/* LGE_CHANGE [james.jang@lge.com] 2010-07-06 */
 #include <mach/lg_pcb_version.h>
 
 /* setting board revision information */
 int lge_bd_rev;
 
+/* LGE_CHANGE_S [james.jang@lge.com] 2010-07-06, only LS670 */
 #if 0
 static char *rev_str[LGE_REV_TOT_NUM] =
 { "evb", "rev_a", "rev_b", "rev_c", "rev_d", "rev_e", "rev_10"};
@@ -143,7 +145,7 @@ static int __init board_revno_setup(char *rev_info)
   return 1;
 }
 #endif
-
+/* LGE_CHANGE_E [james.jang@lge.com] 2010-07-06 */
 
 __setup("lge.rev=", board_revno_setup);
 
@@ -169,7 +171,31 @@ static int __init lge_uart_mode(char *uart_mode)
 
 __setup("uart_console=", lge_uart_mode);
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC)
+/* LGE_CHANGE
+ * To support VS660 Smart factory reset
+ * We dont check flag in kernel if system booting is recovery mode
+ * 2010-06-08, taehung.kim@lge.com
+ */
+/* LGE_CHANGE_S [sm.shim@lge.com] 2010-08-22, merge First Boot Complete Test from VS660 */
+/*
+static int recovery_mode;
+int lge_get_recovery_state(void)
+{
+	return recovery_mode;
+}
 
+static int __init lge_recovery_state(char* s)
+{
+	if(!strcmp(s,"on"))
+		recovery_mode = 1;
+	else
+		recovery_mode = 0;
+	printk("%s: recovery mode = %s\n",__func__,s);
+	return 1;
+}
+__setup("recovery=",lge_recovery_state);
+*/
+/* LGE_CHANGE_E [sm.shim@lge.com] 2010-08-22, merge First Boot Complete Test from VS660 */
 #endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
@@ -322,7 +348,7 @@ void __init msm_add_kgsl_device(void)
 	kgsl_pdata.set_grp3d_async = NULL;
 	kgsl_pdata.imem_clk_name = "imem_clk";
 	kgsl_pdata.grp3d_clk_name = "grp_clk";
-//	kgsl_pdata.grp2d_clk_name = NULL;
+	kgsl_pdata.grp2d_clk_name = NULL;
 #endif
 
 	platform_device_register(&msm_device_kgsl);
@@ -419,9 +445,11 @@ static void __init fb_size_setup(char **p)
 }
 __early_param("pmem_fb_size=", fb_size_setup);
 
+// LGE_CHANGE_S [dojip.kim@lge.com] 2010-08-06, lge_mtd_direct_access
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC
 extern void *lge_mtd_direct_access_addr;
 #endif
+// LGE_CHANGE_E [dojip.kim@lge.com] 2010-08-06
 
 void __init msm_msm7x2x_allocate_memory_regions(void)
 {
@@ -476,10 +504,12 @@ void __init msm_msm7x2x_allocate_memory_regions(void)
 			size, addr, __pa(addr));
 #endif
 
+	// LGE_CHANGE_S [dojip.kim@lge.com] 2010-08-06, lge_mtd_direct_access
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC
 	// PAGE_NUM_PER_BLK*PAGE_SIZE_BYTE
 	lge_mtd_direct_access_addr = alloc_bootmem(64*2048);
 #endif
+	// LGE_CHANGE_E [dojip.kim@lge.com] 2010-08-06
 }
 
 void __init msm_add_pmem_devices(void)
@@ -656,7 +686,7 @@ __WEAK struct android_usb_platform_data android_usb_pdata = {
 	.num_compositions = ARRAY_SIZE(usb_func_composition),
 	.product_name	= "Qualcomm HSUSB Device",
 	.manufacturer_name = "Qualcomm Incorporated",
-	
+	.nluns = 1,
 };
 static struct platform_device android_usb_device = {
 	.name	= "android_usb",
@@ -767,6 +797,7 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 	.pmic_register_vbus_sn   = msm_pm_app_register_vbus_sn,
 	.pmic_unregister_vbus_sn = msm_pm_app_unregister_vbus_sn,
 	.pmic_enable_ldo         = msm_pm_app_enable_usb_ldo,
+	.pclk_required_during_lpm = 1,
 };
 
 #ifdef CONFIG_USB_GADGET

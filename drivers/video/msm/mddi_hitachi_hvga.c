@@ -26,6 +26,8 @@
 #include <mach/vreg.h>
 #include <mach/board_lge.h>
 
+//#define DRV_AUO_PANEL
+
 #define PANEL_DEBUG 0
 
 #define LCD_CONTROL_BLOCK_BASE	0x110000
@@ -57,6 +59,9 @@ extern int g_mddi_lcd_probe;
 #endif
 
 #if defined(CONFIG_MACH_MSM7X27_THUNDERG) || defined(CONFIG_MACH_MSM7X27_THUNDERC) || defined(CONFIG_MACH_MSM7X27_THUNDERA)
+/* Define new structure named 'msm_panel_hitachi_pdata' to use LCD initialization Flag (initialized)
+ * 2010-04-21, minjong.gong@lge.com
+ */
 static struct msm_panel_hitachi_pdata *mddi_hitachi_pdata;
 #else
 static struct msm_panel_common_pdata *mddi_hitachi_pdata;
@@ -117,6 +122,15 @@ static struct display_table mddi_hitachi_display_on_3rd[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
+/* LGE_CHANGE_S [james.jang@lge.com] 2010-11-09, AUO LCD Pannel */
+static struct display_table mddi_hitachi_display_on_auo[] = {
+	// Display on sequence
+	{0x11, 4, {0x00, 0x00, 0x00, 0x00}},
+	{REGFLAG_DELAY, 120, {}},
+	{0x29, 4, {0x00, 0x00, 0x00, 0x00}},
+	{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+/* LGE_CHANGE_E [james.jang@lge.com] 2010-11-09 */
 #if 0
 static struct display_table2 mddi_hitachi_img[] = {
 	{0x2c, 16384, {}},
@@ -137,8 +151,10 @@ static struct display_table mddi_hitachi_display_off[] = {
 static struct display_table mddi_hitachi_sleep_mode_on_data[] = {
 	// Display off sequence
 	{0x28, 4, {0x00, 0x00, 0x00, 0x00}},
+	// [App 4th Table] Change from 40ms to 20ms. 2010-08-03. minjong.gong@lge.com
 	{REGFLAG_DELAY, 20, {}},
 	{0x10, 4, {0x00, 0x00, 0x00, 0x00}},
+	// [Apply 4th Table] Change from 100ms to 40ms. 2010-08-03. minjong.gong@lge.com
 	{REGFLAG_DELAY, 40, {}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
@@ -178,12 +194,14 @@ static struct display_table mddi_hitachi_initialize_1st[] = {
 	// PGAMMACTL 
 	//{0xfa, 16, {0x11, 0x13, 0x08, 0x14, 0x28, 0x2c, 0x2b, 0x0d,
 	//		    0x19, 0x14, 0x1e, 0x1e, 0x0f, 0x00, 0x00, 0x00}},
+	// Apply 3rd Cut gamma table. 2010-08-10. minjong.gong@lge.com
 	{0xfa, 16, {0x03, 0x03, 0x08, 0x28, 0x2b, 0x2f, 0x32, 0x12,
 				0x1d, 0x1f, 0x1c, 0x1c, 0x0f, 0x00, 0x00, 0x00}},
 
 	// NGAMMACTL 
 	//{0xfb, 16, {0x11, 0x13, 0x08, 0x14, 0x28, 0x2c, 0x2b, 0x2d,
 	//			0x19, 0x14, 0x1e, 0x1e, 0x0f, 0x00, 0x00, 0x00}},
+	// Apply 3rd Cut gamma table. 2010-08-10. minjong.gong@lge.com
 	{0xfb, 16, {0x03, 0x03, 0x08, 0x28, 0x2b, 0x2f, 0x32, 0x12,
 				0x1d, 0x1f, 0x1c, 0x1c, 0x0f, 0x00, 0x00, 0x00}},
 
@@ -217,14 +235,19 @@ static struct display_table mddi_hitachi_initialize_3rd_vs660[] = {
 			    0x3f, 0x66, 0x02, 0x3f, 0x66, 0x02, 0x00, 0x00}},
 
 	// VCMCTL 
+	// [Apply 4th Table] Change 6th parameter. From 0x00 to 0x04. 2010-08-03. minjong.gong@lge.com
 	{0xf5, 12, {0x00, 0x59, 0x45, 0x00, 0x00, 0x04, 0x00, 0x00,
 			    0x00, 0x00, 0x59, 0x45}},
 	{REGFLAG_DELAY, 10, {}},
 
 	// MANPWRSEQ 
+	// [Apply 4th Table] Change 1st parameter. From 0x01 to 0x03. 2010-08-03. minjong.gong@lge.com
 	{0xf3, 8,  {0x03, 0x6e, 0x15, 0x07, 0x03, 0x00, 0x00, 0x00}},
 	
 	// DISCTL 
+	// Change 2nd and 15th parameters. From 0x4d to 0x54.
+	// When useing 0x4D (65Hz), it causes decreasing the touch sensitivity.
+	// 2010-08-21. minjong.gong@lge.com
 	{0xf2, 20, {0x3b, 0x54, 0x0f, 0x08, 0x08, 0x08, 0x08, 0x00,
 			    0x08, 0x08, 0x00, 0x04, 0x00, 0x00, 0x54, 0x08,
 			    0x08, 0x08, 0x08, 0x00}},
@@ -266,14 +289,19 @@ static struct display_table mddi_hitachi_initialize_3rd_p500[] = {
 			    0x04, 0x66, 0x02, 0x04, 0x66, 0x02, 0x00, 0x00}},
 
 	// VCMCTL 
+	// [Apply 4th Table] Change 6th parameter. From 0x00 to 0x04. 2010-08-03. minjong.gong@lge.com
 	{0xf5, 12, {0x00, 0x59, 0x45, 0x00, 0x00, 0x04, 0x00, 0x00,
 			    0x00, 0x00, 0x59, 0x45}},
 	{REGFLAG_DELAY, 10, {}},
 
 	// MANPWRSEQ 
+	// [Apply 4th Table] Change 1st parameter. From 0x01 to 0x03. 2010-08-03. minjong.gong@lge.com
 	{0xf3, 8,  {0x03, 0x6e, 0x15, 0x07, 0x03, 0x00, 0x00, 0x00}},
 	
 	// DISCTL 
+	// Change 2nd and 15th parameters. From 0x4d to 0x54.
+	// When useing 0x4D (65Hz), it causes decreasing the touch sensitivity.
+	// 2010-08-21. minjong.gong@lge.com
 	{0xf2, 20, {0x3b, 0x54, 0x0f, 0x08, 0x08, 0x08, 0x08, 0x00,
 			    0x08, 0x08, 0x00, 0x04, 0x00, 0x00, 0x54, 0x08,
 			    0x08, 0x08, 0x08, 0x00}},
@@ -304,6 +332,112 @@ static struct display_table mddi_hitachi_initialize_3rd_p500[] = {
 
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
+
+/* LGE_CHANGE_S [james.jang@lge.com] 2010-11-09, AUO LCD Pannel */
+static struct display_table mddi_hitachi_initialize_auo[] = {
+
+	// Power ON Sequence 
+	{0xf0, 4, {0x5a, 0x5a, 0x00, 0x00}},
+	{0xf1, 4, {0x5a, 0x5a, 0x00, 0x00}},
+
+	// DISCTL - 67.2HZ(0x4b) 70Hz(0x48) 72.4Hz(0x46) 75Hz(0x43) 80Hz(0x3f) 90Hz(0x38), Frame Inversion
+	{0xf2, 20, {0x3b, 0x48, 0x03, 0x08, 
+		         0x08, 0x08, 0x08, 0x00,
+			       0x08, 0x08, 0x00, 0x00, 
+			       0x00, 0x00, 0x54, 0x08,
+			       0x08, 0x08, 0x08, 0x00}},
+
+	// PWRCTL 
+	{0xf4, 16, {0x08, 0x00, 0x00, 0x00, 
+		         0x00, 0x00, 0x00, 0x00,
+			       0x3f, 0x79, 0x03, 0x3f, 
+			       0x79, 0x03, 0x00, 0x00}},
+
+	// VCMCTL - VCIR 0x03 -> 0x00
+	{0xf5, 12, {0x00, 0x5d, 0x75, 0x00, 
+		         0x00, 0x00, 0x00, 0x00,
+			       0x04, 0x00, 0x5d, 0x75}},
+			       
+	// {REGFLAG_DELAY, 10, {0}},
+
+  // SRCCTL
+	{0xf6, 8, {0x04, 0x00, 0x08, 0x03, 
+		         0x01, 0x00, 0x01, 0x00}},
+
+  // IFCTL
+	{0xf7, 8,  {0x48, 0x80, 0x10, 0x02,
+		         0x00, 0x00, 0x00, 0x00}},
+
+  // PANELCTL
+	{0xf8, 4,  {0x11, 0x00, 0x00, 0x00}},
+
+
+#if 0 // backlight auto-control
+  // WRDISBV
+	{0x51, 4,  {0xff, 0x00, 0x00, 0x00}},
+
+
+  // WRCTRLD
+	{0x53, 4,  {0x2c, 0x00, 0x00, 0x00}},
+
+
+  // WRCABC
+	{0x55, 4,  {0x03, 0x00, 0x00, 0x00}},
+
+  // WRCABCMB
+	{0x5e, 4,  {0x00, 0x00, 0x00, 0x00}},
+
+  // MIECTL1
+	{0xc0, 4,  {0x80, 0x80, 0x3f, 0x00}},
+
+  // BCMODE
+	{0xc1, 4,  {0x13, 0x00, 0x00, 0x00}},
+#endif
+
+  // GAMMASEL - Red
+	{0xf9, 4,  {0x24, 0x00, 0x00, 0x00}},
+	// PGAMMACTL 
+	{0xfa, 16, {0x0b, 0x0b, 0x0c, 0x1f, 
+		         0x1f, 0x27, 0x2f, 0x14,
+			       0x21, 0x26, 0x32, 0x31, 
+			       0x24, 0x00, 0x00, 0x01}},
+
+  // GAMMASEL - Green
+	{0xf9, 4,  {0x22, 0x00, 0x00, 0x00}},
+	// PGAMMACTL 
+	{0xfa, 16, {0x0b, 0x0b, 0x0e, 0x27, 
+		         0x29, 0x30, 0x33, 0x12,
+			       0x1f, 0x25, 0x31, 0x30, 
+			       0x24, 0x00, 0x00, 0x01}},
+
+  // GAMMASEL - Blue
+	{0xf9, 4,  {0x21, 0x00, 0x00, 0x00}},
+	// PGAMMACTL 
+	{0xfa, 16, {0x0b, 0x0b, 0x1a, 0x3a, 
+		         0x3f, 0x3f, 0x3f, 0x08,
+			       0x19, 0x21, 0x2c, 0x2a, 
+			       0x1a, 0x00, 0x00, 0x01}},
+
+	// COLMOD 
+	{0x3a,  4, {0x55, 0x00, 0x00, 0x00}},
+
+	// MADCTL 
+	{0x36,  4, {0x00, 0x00, 0x00, 0x00}},
+
+	// TEON 
+	{0x35,  4, {0x00, 0x00, 0x00, 0x00}},
+
+
+	// CASET
+	{0x2a,  4, {0x00, 0x00, 0x01, 0x3f}},
+
+	// PASET
+	{0x2b,  4, {0x00, 0x00, 0x01, 0xdf}},
+		
+	{REGFLAG_END_OF_TABLE, 0x00, {0}}
+};
+/* LGE_CHANGE_E [james.jang@lge.com] 2010-11-09 */
+
 void hitachi_display_table(struct display_table *table, unsigned int count)
 {
 	unsigned int i;
@@ -364,6 +498,7 @@ static void mddi_hitachi_vsync_set_handler(msm_fb_vsync_handler_type handler,	/*
 	boolean error = FALSE;
 	unsigned long flags;
 
+	/* LGE_CHANGE [neo.kang@lge.com] 2009-11-26, change debugging api */
 	printk("%s : handler = %x\n", 
 			__func__, (unsigned int)handler);
 
@@ -403,6 +538,10 @@ static void mddi_hitachi_lcd_vsync_detected(boolean detected)
 	uint32 elapsed_us;
 	uint32 num_vsyncs;
 
+/* LGE_CHANGE
+  * Close below code to fix screen shaking problem
+  * 2010-04-22, minjong.gong@lge.com
+  */
 //	mddi_queue_register_write_int(0x2C, 0);
 
 #if 0 /* Block temporaly till vsync implement */
@@ -478,6 +617,7 @@ static void mddi_hitachi_lcd_vsync_detected(boolean detected)
 #endif
 }
 
+// LGE_CHANGE [dojip.kim@lge.com] 2010-07-26, HACK: early wakeup touch for performance
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 extern int ts_set_vreg(unsigned char onoff);
 #endif
@@ -510,12 +650,19 @@ static int mddi_hitachi_lcd_on(struct platform_device *pdev)
 	hitachi_display_table(mddi_hitachi_display_on_1st,
 			sizeof(mddi_hitachi_display_on_1st) / sizeof(struct display_table));
 #else
+#ifdef DRV_AUO_PANEL
+	EPRINTK("ThunderC ==> lge_bd_rev = %d : AUO LCD initial\n", lge_bd_rev);
+	hitachi_display_table(mddi_hitachi_initialize_auo, sizeof(mddi_hitachi_initialize_auo)/sizeof(struct display_table));
+	hitachi_display_table(mddi_hitachi_display_on_auo, sizeof(mddi_hitachi_display_on_auo) / sizeof(struct display_table));
+#else
 	EPRINTK("ThunderC ==> lge_bd_rev = %d : 3rd LCD initial\n", lge_bd_rev);
 	hitachi_display_table(mddi_hitachi_initialize_3rd_vs660, sizeof(mddi_hitachi_initialize_3rd_vs660)/sizeof(struct display_table));
 	hitachi_display_table(mddi_hitachi_display_on_3rd, sizeof(mddi_hitachi_display_on_3rd) / sizeof(struct display_table));
+#endif	
 #endif
 	is_lcd_on = TRUE;
 
+	// LGE_CHANGE [dojip.kim@lge.com] 2010-07-26, HACK: early wakeup touch for performance
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 	ts_set_vreg(1);
 #endif
@@ -552,9 +699,15 @@ static int mddi_hitachi_lcd_store_on(void)
 	hitachi_display_table(mddi_hitachi_display_on_1st,
 			sizeof(mddi_hitachi_display_on_1st) / sizeof(struct display_table));
 #else
+#ifdef DRV_AUO_PANEL
+	hitachi_display_table(mddi_hitachi_initialize_auo, sizeof(mddi_hitachi_initialize_auo)/sizeof(struct display_table));
+	mdelay(200);
+	hitachi_display_table(mddi_hitachi_display_on_auo, sizeof(mddi_hitachi_display_on_auo) / sizeof(struct display_table));
+#else
 	hitachi_display_table(mddi_hitachi_initialize_3rd_vs660, sizeof(mddi_hitachi_initialize_3rd_vs660)/sizeof(struct display_table));
 	mdelay(200);
 	hitachi_display_table(mddi_hitachi_display_on_3rd, sizeof(mddi_hitachi_display_on_3rd) / sizeof(struct display_table));
+#endif	
 #endif
 	is_lcd_on = TRUE;
 	return 0;
@@ -603,6 +756,7 @@ int mddi_hitachi_position(void)
 }
 EXPORT_SYMBOL(mddi_hitachi_position);
 
+/* LGE_CHANGE [james.jang@lge.com] 2010-08-28, probe LCD */
 #if defined(CONFIG_FB_MSM_MDDI_NOVATEK_HITACHI_HVGA)
 DEVICE_ATTR(hitachi_lcd_onoff, 0666, mddi_hitachi_lcd_show_onoff, mddi_hitachi_lcd_store_onoff);
 #else
@@ -636,6 +790,7 @@ static int __init mddi_hitachi_lcd_probe(struct platform_device *pdev)
 
 	msm_fb_add_device(pdev);
 
+/* LGE_CHANGE [james.jang@lge.com] 2010-08-28, probe LCD */
 #if defined(CONFIG_FB_MSM_MDDI_NOVATEK_HITACHI_HVGA)
 	ret = device_create_file(&pdev->dev, &dev_attr_hitachi_lcd_onoff);
 #else
@@ -665,6 +820,7 @@ static int mddi_hitachi_lcd_init(void)
 
 #endif
 
+/* LGE_CHANGE [james.jang@lge.com] 2010-08-28, probe LCD */
 #if defined(CONFIG_FB_MSM_MDDI_NOVATEK_HITACHI_HVGA)
   gpio_tlmm_config(GPIO_CFG(101, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), GPIO_ENABLE);
 	gpio_configure(101, GPIOF_INPUT);
@@ -690,6 +846,11 @@ static int mddi_hitachi_lcd_init(void)
 		pinfo->lcd.refx100 = (mddi_hitachi_rows_per_second * 100) /
                         		mddi_hitachi_rows_per_refresh;
 
+/* LGE_CHANGE.
+  * Change proch values to resolve LCD Tearing. Before BP:14, FP:6. After BP=FP=6.
+  * The set values on LCD are both 8, but we use 6 for MDDI in order to secure timing margin.
+  * 2010-08-21, minjong.gong@lge.com
+  */
 		pinfo->lcd.v_back_porch = 6;
 		pinfo->lcd.v_front_porch = 6;
 		pinfo->lcd.v_pulse_width = 4;
@@ -768,7 +929,11 @@ static void mddi_hitachi_lcd_panel_store_poweron(void)
 	}
 }
 
-
+/* LGE_CHANGE
+  * Add new function to reduce current comsumption in sleep mode.
+  * In sleep mode disable LCD by assertion low on reset pin.
+  * 2010-06-07, minjong.gong@lge.com
+  */
 static void mddi_hitachi_lcd_panel_poweroff(void)
 {
 	struct msm_panel_hitachi_pdata *pdata = mddi_hitachi_pdata;

@@ -197,6 +197,9 @@ void mtc_send_key_log_packet(unsigned long keycode, unsigned long state)
 	ext_msg_type msg;
 	dword sendKeyValue = 0;
 
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04 [LS670]
+	 * don't send a raw diag packet in running MTC
+	 */
 	if (mtc_running)
 		return;
 
@@ -263,6 +266,7 @@ PACK(void *) LGF_MTCProcess(PACK(void *)req_pkt_ptr,/* pointer to request packet
 	} else
 		send_to_arm9((void *)req_ptr, (void *)rsp_ptr);
 
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04 [LS670] */
 	mtc_running = 0;
 
 	return (rsp_ptr);
@@ -283,6 +287,7 @@ DIAG_MTC_F_rsp_type *mtc_info_req_proc(DIAG_MTC_F_req_type * pReq)
 	pRsp = (DIAG_MTC_F_rsp_type *) diagpkt_alloc(DIAG_MTC_F, rsp_len);
 	if (pRsp == NULL) {
 		printk(KERN_ERR "[MTC] diagpkt_alloc failed\n");
+		/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04, null check */
 		return pRsp;
 	}
 
@@ -381,6 +386,7 @@ static int ats_mtc_set_lcd_info(mtc_scrn_id_type ScreenType)
 	return 1;
 }
 
+// from GISELE
 DIAG_MTC_F_rsp_type *mtc_capture_screen(DIAG_MTC_F_req_type * pReq)
 {
 	unsigned int rsp_len;
@@ -389,6 +395,9 @@ DIAG_MTC_F_rsp_type *mtc_capture_screen(DIAG_MTC_F_req_type * pReq)
 
 	printk(KERN_INFO "[MTC]mtc_capture_screen\n");
 
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04, 
+	 * allocation the memory for bmp_data
+	 */
 	rsp_len = sizeof(mtc_capture_rsp_type) + MTC_SCRN_BUF_SIZE_MAX;
 	printk(KERN_INFO "[MTC] mtc_capture_screen rsp_len :(%d)\n", rsp_len);
 
@@ -398,6 +407,7 @@ DIAG_MTC_F_rsp_type *mtc_capture_screen(DIAG_MTC_F_req_type * pReq)
 			(DIAG_MTC_F_rsp_type *) diagpkt_alloc(DIAG_MTC_F, rsp_len);
 		if (pCaputureRsp == NULL) {
 			printk(KERN_ERR "[MTC] diagpkt_alloc failed\n");
+			/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04, null check */
 			return pCaputureRsp;
 		}
 	}
@@ -455,6 +465,9 @@ extern unsigned int ats_mtc_log_mask;
 void ats_eta_mtc_key_logging(int scancode, unsigned char keystate)
 {
 
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04 [LS670]
+	 * don't send a raw diag packet in running MTC
+	 */
 	if (mtc_running)
 		return;
 
@@ -519,6 +532,9 @@ EXPORT_SYMBOL(ats_eta_mtc_key_logging);
 void ats_eta_mtc_touch_logging (int pendown, int x, int y)
 {
 
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04 [LS670]
+	 * don't send a raw diag packet in running MTC
+	 */
 	if (mtc_running)
 		return;
 	
@@ -601,6 +617,7 @@ void mtc_send_key_log_data(struct ats_mtc_key_log_type *p_ats_mtc_key_log)
 	pRsp = (DIAG_MTC_F_rsp_type *) diagpkt_alloc(DIAG_MTC_F, rsp_len);
 	if (pRsp == NULL) {
 		printk(KERN_ERR "[MTC] diagpkt_alloc failed\n");
+		/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-04, null check */
 		//diagpkt_commit(pRsp);
 		return;
 	}
@@ -673,9 +690,9 @@ DIAG_MTC_F_rsp_type *mtc_execute(DIAG_MTC_F_req_type * pReq)
 	char cmdstr[100];
 	int fd;
 
-	unsigned int req_len;
+	unsigned int req_len = 0;
 	unsigned int rsp_len;
-	DIAG_MTC_F_rsp_type *pRsp;
+	DIAG_MTC_F_rsp_type *pRsp = NULL;
 	unsigned char *mtc_cmd_buf_encoded = NULL;
 	int lenb64 = 0;
 
@@ -732,6 +749,11 @@ DIAG_MTC_F_rsp_type *mtc_execute(DIAG_MTC_F_req_type * pReq)
 		break;
 	}
 
+	if (NULL == pRsp) {
+		printk(KERN_ERR "[MTC] pRsp is Null\n");
+		return pRsp;
+	}
+
 	pRsp->hdr.cmd_code = pReq->hdr.cmd_code;
 	pRsp->hdr.sub_cmd = pReq->hdr.sub_cmd;
 
@@ -759,7 +781,7 @@ DIAG_MTC_F_rsp_type *mtc_execute(DIAG_MTC_F_req_type * pReq)
 		printk("\n [MTC]execute /system/bin/mtc, %s\n", cmdstr);
 		sys_close(fd);
 	}
-	
+	// END: eternalblue@lge.com.2009-10-23
 
 	printk(KERN_INFO "[MTC]execute mtc : data - %s\n\n", cmdstr);
 	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);

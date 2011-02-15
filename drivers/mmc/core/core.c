@@ -889,7 +889,7 @@ void mmc_set_timing(struct mmc_host *host, unsigned int timing)
  * If a host does all the power sequencing itself, ignore the
  * initial MMC_POWER_UP stage.
  */
-static void mmc_power_up(struct mmc_host *host)
+void mmc_power_up(struct mmc_host *host)
 {
 	int bit;
 
@@ -912,6 +912,8 @@ static void mmc_power_up(struct mmc_host *host)
 	host->ios.timing = MMC_TIMING_LEGACY;
 	mmc_set_ios(host);
 
+	printk("%s: mmc power up\n", mmc_hostname(host));
+
 	/*
 	 * This delay should be sufficient to allow the power supply
 	 * to reach the minimum voltage.
@@ -929,8 +931,9 @@ static void mmc_power_up(struct mmc_host *host)
 	 */
 	mmc_delay(10);
 }
+EXPORT_SYMBOL(mmc_power_up);
 
-static void mmc_power_off(struct mmc_host *host)
+void mmc_power_off(struct mmc_host *host)
 {
 	host->ios.clock = 0;
 	host->ios.vdd = 0;
@@ -942,7 +945,9 @@ static void mmc_power_off(struct mmc_host *host)
 	host->ios.bus_width = MMC_BUS_WIDTH_1;
 	host->ios.timing = MMC_TIMING_LEGACY;
 	mmc_set_ios(host);
+	printk("%s: mmc power down\n", mmc_hostname(host));
 }
+EXPORT_SYMBOL(mmc_power_off);
 
 /*
  * Cleanup when the last reference to the bus operator is dropped.
@@ -1090,9 +1095,13 @@ void mmc_rescan(struct work_struct *work)
 	int extend_wakelock = 0;
 	int ret;
 
-	ret = host->ops->get_status(host);
-	if (host->ops->get_status && ret == 1){
-		mmc_schedule_delayed_work(&host->detect, HZ / 5);
+    
+	if (host->ops->get_status){
+		ret = host->ops->get_status(host);
+		if (ret == 1) {
+			mmc_schedule_delayed_work(&host->detect, HZ / 3);
+			return;
+		}
 	}
 	mmc_bus_get(host);
 
@@ -1317,9 +1326,13 @@ int mmc_suspend_host(struct mmc_host *host, pm_message_t state)
 	}
 	mmc_bus_put(host);
 
-	if (!err)
-		mmc_power_off(host);
 
+
+	if (!strcmp(mmc_hostname(host), "mmc1")){
+		if (!err)
+			mmc_power_off(host);
+	} else
+		printk("sd card suspend...\n");
 	return err;
 }
 

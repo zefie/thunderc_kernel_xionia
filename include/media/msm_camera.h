@@ -114,11 +114,13 @@
 #define MSM_CAM_IOCTL_AF_CTRL_DONE \
 	_IOW(MSM_CAM_IOCTL_MAGIC, 26, struct msm_ctrl_cmt_t *)
 
-
-#if 1
+#if 1//def LG_CAMERA_HIDDEN_MENU
 #define MSM_CAM_IOCTL_SENSOR_ALWAYS_ON_TEST _IOW(MSM_CAM_IOCTL_MAGIC, 27, uint32_t *)
 #endif
 
+
+#define MSM_CAM_IOCTL_ERROR_CONFIG \
+       _IOW(MSM_CAM_IOCTL_MAGIC, 32, uint32_t *)
 
 #define MAX_SENSOR_NUM  3
 #define MAX_SENSOR_NAME 32
@@ -331,7 +333,10 @@ struct msm_frame {
 
 	void *cropinfo;
 	int croplen;
+	uint32_t error_code;
 };
+
+#define MSM_CAMERA_ERR_MASK (0xFFFFFFFF & 1)
 
 struct msm_stats_buf {
 	int type;
@@ -398,7 +403,6 @@ struct msm_snapshot_pp_status {
 #define CFG_GET_PICT_MAX_EXP_LC		27
 #define CFG_SEND_WB_INFO    28
 #define CFG_MAX 			29
-
 
 /* 2010-05-02: Add auto-focus values */
 /* 2010-05-05: Add setting iso values */

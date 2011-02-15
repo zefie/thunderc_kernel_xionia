@@ -272,6 +272,31 @@ config LGE_THERM_NO_STOP_CHARGING
 	help
 	  This patch is no stop charging even if hot or cold battery only for testing
 
+# LGE_CHANGE [dojip.kim@lge.com] 2010-08-17
+config LGE_RTC_INTF_ALARM_SYNC
+	bool "LGE alarm sync (fix the elapsed time)"
+	default n
+	help
+	  This patch is alarm sync to fix the wrong elapsed time 
+
+# LGE_CHANGE [dojip.kim@lge.com] 2010-09-05, avoid the rooting via hotplug
+config LGE_BLOCK_HOTPLUG
+	bool "LGE block the hotplug"
+	default n
+	help
+	  Android doesn't need a hotplug. So, block the hotplug to avoid the rooting
+
+config LGE_GRAM_REFRESH_PATCH
+	bool "LGE gram refresh patch"
+	default n
+	help
+	  This patch is added for gram-embedded device like mddi.
+	  because, when suspend state, power of mddi is off usually,
+	  gram of DDI chip has garbage data until data of gram is refreshed.
+	  this can cause displaying broken screen in time of turning backlight on.
+	  for preventing this problem, add refreshing routine before turning 
+	  backlight on by using late resume mechanism.
+
 endmenu
 
 endmenu

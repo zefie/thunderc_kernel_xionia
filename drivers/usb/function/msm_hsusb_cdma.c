@@ -85,6 +85,7 @@ static int pid = 0x9018;
 
 static int usb_chg_type = 0;
 static int usb_maxpower = 0;
+
 #if defined (CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
 static int ADB_state = 0; 
 #endif
@@ -141,6 +142,7 @@ static void usb_chg_stop(struct work_struct *w);
 
 #if defined (CONFIG_USB_SUPPORT_LGE_FACTORY_USB) || \
 	defined(CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_MEID)
+
 extern int msm_chg_LG_cable_type(void);
 extern void msm_get_MEID_type(char *);
 #endif
@@ -163,6 +165,7 @@ extern void msm_get_MEID_type(char *);
 
 #if defined(CONFIG_USB_SUPPORT_LGE_FACTORY_USB) || \
 	defined(CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_MEID)
+
 #define LG_FACTORY_CABLE_TYPE 		3
 #define LG_FACTORY_CABLE_130K_TYPE 	10
 #define LT_ADB_CABLE 			0xff
@@ -283,6 +286,9 @@ static int ulpi_write(struct usb_info *ui, unsigned val, unsigned reg);
 static void ep0_setup_ack(struct usb_info *ui);
 #endif
 
+
+static DEFINE_MUTEX(chg_usb_lock);
+
 struct usb_device_descriptor desc_device = {
 	.bLength = USB_DT_DEVICE_SIZE,
 	.bDescriptorType = USB_DT_DEVICE,
@@ -325,7 +331,8 @@ static ssize_t print_switch_state(struct switch_dev *sdev, char *buf)
 	return sprintf(buf, "%s\n", (ui->online ? "online" : "offline"));
 }
 
-#define USB_WALLCHARGER_CHG_CURRENT 1800
+
+#define USB_WALLCHARGER_CHG_CURRENT 2000
 static int usb_get_max_power(struct usb_info *ui)
 {
 	unsigned long flags;
@@ -342,16 +349,18 @@ static int usb_get_max_power(struct usb_info *ui)
 	if (temp == USB_CHG_TYPE__INVALID)
 		return -ENODEV;
 
+	
 	if (temp == USB_CHG_TYPE__WALLCHARGER)
-#if defined(CONFIG_MACH_MSM7X27_GISELE)
-		return GISELE_TA_CHG_CURRENT;
+#if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
+		return LS670_TA_CHG_CURRENT;
 #else /* qualcomm or google */
 		return USB_WALLCHARGER_CHG_CURRENT;
 #endif
 
 	if (suspended || !configured)
+
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
-		return 100;
+		return 10;
 #else
 		return 0;
 #endif
@@ -404,12 +413,18 @@ chg_legacy_det_out:
 	if (ret)
 		return;
 
+	mutex_lock(&chg_usb_lock);
 	msm_chg_usb_charger_connected(temp);
+	mutex_unlock(&chg_usb_lock);
+
 	maxpower = usb_get_max_power(ui);
 	usb_maxpower = maxpower;
 
-	if (maxpower > 0)
+	if (maxpower > 0) {
+		mutex_lock(&chg_usb_lock);
 		msm_chg_usb_i_is_available(maxpower);
+		mutex_unlock(&chg_usb_lock);
+	}
 
 	/* USB driver prevents idle and suspend power collapse(pc)
 	 * while usb cable is connected. But when dedicated charger is
@@ -1996,6 +2011,7 @@ static int usb_hw_reset(struct usb_info *ui)
 	writel(ui->dma, USB_ENDPOINTLISTADDR);
 
 #if defined (CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
+
 	if( msm_chg_LG_cable_type() == LG_FACTORY_CABLE_TYPE) {
 		unsigned tmp = 0; 
 
@@ -2061,6 +2077,7 @@ static void usb_reset(struct usb_info *ui)
 #endif
 
 #if defined(CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
+	
 	if( nCableType == LG_FACTORY_CABLE_TYPE ||
 	    nCableType == LG_FACTORY_CABLE_130K_TYPE) // LT 
 		tempPID = LG_FACTORY_USB_PID;
@@ -2454,6 +2471,7 @@ void usb_function_enable(const char *function, int enable)
 
 
 #if defined(CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
+	
 	ADB_state = enable;
 #endif
 	pr_info("%s: name = %s, enable = %d\n", __func__, function, enable);
@@ -2487,8 +2505,11 @@ void usb_function_enable(const char *function, int enable)
 		return;
 	}
 #if defined(CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
+	
 	if (pid == 0x6001) {
 		pid = 0x6000;
+		// LG_FW khlee : during the cablibration, 
+		// ADB enable signal can make the failure. 
 		return;     
 	}
 	else if (pid == 0x6002) {
@@ -2529,7 +2550,9 @@ static int usb_vbus_is_on(struct usb_info *ui)
 {
 	unsigned tmp;
 
+	
 #if defined(CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
+	
 	int cable_type;
 #if defined(CONFIG_USB_SUPPORT_LG_SMEM_CABLE_TYPE)
 	cable_type = lgwfw_smem_cable_type();
@@ -2654,8 +2677,13 @@ static void usb_do_work(struct work_struct *w)
 					 */
 					msm_hsusb_suspend_locks_acquire(ui, 1);
 
+					
+					mutex_lock(&chg_usb_lock);
 					msm_chg_usb_i_is_not_available();
 					msm_chg_usb_charger_disconnected();
+					
+					mutex_unlock(&chg_usb_lock);
+
 				}
 
 				/* reset usb core and usb phy */
@@ -2669,6 +2697,7 @@ static void usb_do_work(struct work_struct *w)
 					msm_pm_app_enable_usb_ldo(0);
 				ui->state = USB_STATE_OFFLINE;
 #if defined(CONFIG_USB_SUPPORT_LGDRIVER)
+				
 				switch_set_state(&ui->sdev, ui->online);
 				enable_irq(ui->irq);
 #else	/* origin */
@@ -2688,8 +2717,13 @@ static void usb_do_work(struct work_struct *w)
 					(flags & USB_FLAG_CONFIGURE)) {
 				int maxpower = usb_get_max_power(ui);
 
-				if (maxpower > 0)
+				if (maxpower > 0) {
+					
+					mutex_lock(&chg_usb_lock);
 					msm_chg_usb_i_is_available(maxpower);
+					
+					mutex_unlock(&chg_usb_lock);
+				}
 
 				if (flags & USB_FLAG_CONFIGURE)
 					switch_set_state(&ui->sdev, 1);
@@ -2894,8 +2928,13 @@ static void usb_chg_stop(struct work_struct *w)
 	temp = ui->chg_type;
 	spin_unlock_irqrestore(&ui->lock, flags);
 
-	if (temp == USB_CHG_TYPE__SDP)
+	if (temp == USB_CHG_TYPE__SDP) {
+		
+		mutex_lock(&chg_usb_lock);
 		msm_chg_usb_i_is_not_available();
+		
+		mutex_unlock(&chg_usb_lock);
+	}
 }
 
 static void usb_vbus_online(struct usb_info *ui)
@@ -3152,6 +3191,7 @@ static void usb_debugfs_uninit(void) {}
 static void usb_configure_device_descriptor(struct usb_info *ui)
 {
 #if defined(CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_MEID)
+	
 	char meid[15];
 	/* MEID is constitued of 14 characters */
 	char df_serialno[15] ;
@@ -3163,6 +3203,7 @@ static void usb_configure_device_descriptor(struct usb_info *ui)
 
 #if defined(CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_MEID)
 	memset(df_serialno,0,15);
+	
 	memset(meid, 0, 15);
 	//msm_get_MEID_type(df_serialno);
 	msm_get_MEID_type(meid);
@@ -3174,6 +3215,7 @@ static void usb_configure_device_descriptor(struct usb_info *ui)
 	if (!strcmp(df_serialno,"00000000000000"))
 		ui->pdata->serial_number = NULL;
 
+	
 	if (msm_chg_LG_cable_type() == LT_ADB_CABLE) {
 		sprintf(df_serialno,"%s","LGE_ANDROID_DE");
 		ui->pdata->serial_number = df_serialno;
@@ -3261,6 +3303,7 @@ static ssize_t msm_hsusb_show_compswitch(struct device *dev,
 	if (ui->composition)
 		i = scnprintf(buf, PAGE_SIZE,
 #if defined(CONFIG_USB_SUPPORT_LGDRIVER)
+		
 				"%x\n",
 #else	/* origin */
 				"composition product id = %x\n",
@@ -3372,6 +3415,7 @@ static ssize_t  show_##function(struct device *dev,			\
 									\
 static DEVICE_ATTR(function, S_IRUGO, show_##function, NULL);
 
+
 #if defined (CONFIG_USB_SUPPORT_LGDRIVER)
 msm_hsusb_func_attr(modem, 0);
 msm_hsusb_func_attr(diag, 1);
@@ -3409,6 +3453,7 @@ static struct attribute *msm_hsusb_func_attrs[] = {
 	NULL,
 };
 #endif
+
 
 static struct attribute_group msm_hsusb_func_attr_grp = {
 	.name  = "functions",
@@ -3471,6 +3516,7 @@ static int __init usb_probe(struct platform_device *pdev)
 	ui->pdata = pdev->dev.platform_data;
 
 #if defined(CONFIG_USB_SUPPORT_LGE_FACTORY_USB)
+	
 	nCableType = msm_chg_LG_cable_type();
 	if( nCableType == LG_FACTORY_CABLE_TYPE ||
 	    nCableType == LG_FACTORY_CABLE_130K_TYPE)  //detect LT cable
@@ -3645,8 +3691,9 @@ static int __init usb_probe(struct platform_device *pdev)
 	ui->functions_map = ui->pdata->function_map;
 	ui->selfpowered = 0;
 	ui->remote_wakeup = 0;
-#if defined(CONFIG_MACH_MSM7X27_GISELE)
-	ui->maxpower = GISELE_USB_CHG_CURRENT / 2;
+	
+#if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
+	ui->maxpower = LS670_USB_CHG_CURRENT / 2;
 #else /* qualcomm or google */
 	ui->maxpower = 0xFA;
 #endif

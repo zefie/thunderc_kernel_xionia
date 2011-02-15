@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2009 AMIT Technology Inc.
  * Author: Kyle Chen <sw-support@amit-inc.com>
+ * Modified by EunYoung, Cho  LGE Inc.
  *  - Modified power sequence
  *  - I2c driver register(probe, release)
  *
@@ -32,6 +33,7 @@
 //#include <asm-arm/arch/irqs.h> 
 #include <linux/spinlock.h>
 #include <asm/io.h>
+
 
 #include <linux/interrupt.h>
 #include <mach/vreg.h>
@@ -114,7 +116,6 @@ static struct i2c_driver ami602_i2c_driver = {
 
 struct _ami602_data {
 	rwlock_t lock;
-//	int mode; 
 	int rate;
 	volatile int updated;
 	int ch1;
@@ -141,7 +142,7 @@ struct _ami602mid_data {
 	int mag_status;
 } ami602mid_data;
 
-#if 0 
+#if 0
 static int
 s3c_irqext_type(unsigned int irq, unsigned int type)
 {
@@ -255,14 +256,12 @@ static int AMI602_SendTrigger(void)
 }
 #endif
 
-
 static int AMI602_SetMode(int newmode)
 {
 	u8 databuf[10];	
 	int res = 0;
-//	int mode = 0; 
 
-#if 0 
+#if 0
 	read_lock(&ami602_data.lock);
 	mode = ami602_data.mode;
 	read_unlock(&ami602_data.lock);	
@@ -311,7 +310,6 @@ static int AMI602_SetMode(int newmode)
 		if (res<=0)
 			goto exit_AMI602_SetMode;
 
-//		flush_scheduled_work();	
 #if 1 
 		mode = AMI602_HOST_ON; 
 #endif
@@ -382,7 +380,7 @@ static int AMI602_SetMode(int newmode)
 	else
 		return -3;
 	
-#if 0 			
+#if 0 				
 	write_lock(&ami602_data.lock);
 	ami602_data.mode = newmode;
 	write_unlock(&ami602_data.lock);			
@@ -531,7 +529,7 @@ static int AMI602_Init_SensorTrigger(void)
 	u8 databuf[10];	
 	int res = 0;
 	
-#if 0
+#if 0 
 	AMID("SensorTrigger start... \n");
 	write_lock(&ami602_data.lock);
 	ami602_data.mode = 1;//sensor trigger mode
@@ -569,7 +567,7 @@ static int AMI602_Init_SensorTrigger(void)
 	if (res<=0)
 		goto exit_AMI602_Init_SensorTrigger;	
 	
-#if 1 			
+#if 1 		
 	mode = AMI602_SENSOR_ON;
 #endif	
 
@@ -797,7 +795,7 @@ exit_AMI602_ReadSensorDataHostMode:
 static int AMI602_ReadSensorData(char *buf, int bufsize)
 {
 	int ch1,ch2,ch3,ch4,ch5,ch6;
-#if 0 
+#if 0
 	int mode = 0;
 	int res=0;
 #endif	
@@ -805,7 +803,7 @@ static int AMI602_ReadSensorData(char *buf, int bufsize)
 	if ((!buf)||(bufsize<=80))
 		return -10;		
 	
-#if 0
+#if 0 
 	if (mode == AMI602_HOST_ON)
 	{
 		res = AMI602_ReadSensorDataHostMode();	
@@ -817,14 +815,12 @@ static int AMI602_ReadSensorData(char *buf, int bufsize)
 	}
 #endif
 
-//	read_lock(&ami602_data.lock);	
 	ch1 = ami602_data.ch1;
 	ch2 = ami602_data.ch2;
 	ch3 = ami602_data.ch3;
 	ch4 = ami602_data.ch4;
 	ch5 = ami602_data.ch5;
 	ch6 = ami602_data.ch6;	
-//	read_lock(&ami602_data.lock);		
 
 	sprintf(buf, "%04x %04x %04x %04x %04x %04x", ch1,ch2,ch3,ch4,ch5,ch6);
 	return 0;
@@ -842,7 +838,6 @@ static int AMI602_ReadCaliData(char *buf, int bufsize)
 {
 	if ((!buf)||(bufsize<=80))
 		return -1;
-//	read_lock(&ami602mid_data.datalock); 
 	sprintf(buf, "%d %d %d %d %d %d %d", 
 		ami602mid_data.nmx, ami602mid_data.nmy, ami602mid_data.nmz,ami602mid_data.nax,ami602mid_data.nay,ami602mid_data.naz, ami602mid_data.mag_status);		
 //	read_unlock(&ami602mid_data.datalock);
@@ -853,7 +848,6 @@ static int AMI602_ReadMiddleControl(char *buf, int bufsize)
 {
 	if ((!buf)||(bufsize<=80))
 		return -1;
-//	read_lock(&ami602mid_data.datalock);  
 	sprintf(buf, "%d %d %d %d %d", 
 		ami602mid_data.controldata[0], ami602mid_data.controldata[1], ami602mid_data.controldata[2],ami602mid_data.controldata[3],ami602mid_data.controldata[4]);		
 //	read_unlock(&ami602mid_data.ctrllock);	
@@ -870,7 +864,7 @@ static ssize_t show_chipinfo_value(struct device *dev, struct device_attribute *
 static ssize_t show_sensordata_value(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	char strbuf[AMI602_BUFSIZE];
-#if 1 	
+#if 1 
 
 	if(mode == AMI602_HOST_ON)
 		AMI602_ReadSensorData_HostMode(strbuf, AMI602_BUFSIZE);
@@ -907,14 +901,11 @@ static ssize_t show_midcontrol_value(struct device *dev, struct device_attribute
 
 static ssize_t store_midcontrol_value(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-//	write_lock(&ami602mid_data.ctrllock); 
 	sscanf(buf, "%d %d %d %d %d", &(ami602mid_data.controldata[0]), &(ami602mid_data.controldata[1]),
 		   &(ami602mid_data.controldata[2]),&(ami602mid_data.controldata[3]),&(ami602mid_data.controldata[4]));	 		   
-//	write_unlock(&ami602mid_data.ctrllock); 
 	return count;			
 }
 #if 1
-
 static ssize_t show_mode_value(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	char *s;
@@ -959,7 +950,6 @@ static ssize_t store_mode_value(struct device *dev, struct device_attribute *att
 
 	return count;			
 }
-
 #else
 
 static ssize_t show_mode_value(struct device *dev, struct device_attribute *attr, char *buf)
@@ -1013,7 +1003,6 @@ static int ami602mid_ioctl(struct inode *inode, struct file *file, unsigned int 
 		
 	switch (cmd) {			
 		case AMI602MID_IOCTL_SET_POSTURE:
-//			printk(KERN_INFO "Enter AMI602MID_IOCTL_SET_POSTURE\n"); 
 			data = (void __user *) arg;
 			if (data == NULL)
 				break;	
@@ -1021,13 +1010,10 @@ static int ami602mid_ioctl(struct inode *inode, struct file *file, unsigned int 
 				retval = -EFAULT;
 				goto err_out;
 			}
-//			printk(KERN_INFO "Set posture to be %d %d %d\n", valuebuf[0],valuebuf[1],valuebuf[2]); 
-//			write_lock(&ami602mid_data.datalock); 
 			ami602mid_data.yaw   = valuebuf[0];
 			ami602mid_data.pitch = valuebuf[1];
 			ami602mid_data.roll  = valuebuf[2];
 			ami602mid_data.mag_status = valuebuf[3];
-//			write_unlock(&ami602mid_data.datalock);
 			break;		
 			
 		case AMI602MID_IOCTL_SET_CALIDATA:
@@ -1038,7 +1024,6 @@ static int ami602mid_ioctl(struct inode *inode, struct file *file, unsigned int 
 				retval = -EFAULT;
 				goto err_out;
 			}
-//			write_lock(&ami602mid_data.datalock); 
 			ami602mid_data.nmx = calidata[0];
 			ami602mid_data.nmy = calidata[1];
 			ami602mid_data.nmz = calidata[2];
@@ -1046,7 +1031,6 @@ static int ami602mid_ioctl(struct inode *inode, struct file *file, unsigned int 
 			ami602mid_data.nay = calidata[4];
 			ami602mid_data.naz = calidata[5];
 			ami602mid_data.mag_status = calidata[6];	
-//			write_unlock(&ami602mid_data.datalock); 
 			break;								
 	
 		case AMI602MID_IOCTL_GET_CONTROL:
@@ -1068,9 +1052,7 @@ static int ami602mid_ioctl(struct inode *inode, struct file *file, unsigned int 
 				retval = -EFAULT;
 				goto err_out;
 			}
-//			write_lock(&ami602mid_data.ctrllock); 
 			memcpy(&ami602mid_data.controldata[0], controlbuf, sizeof(controlbuf));									
-//			write_unlock(&ami602mid_data.ctrllock);	
 			break;					
 		default:
 			printk(KERN_ERR "%s not supported = 0x%04x", __FUNCTION__, cmd);
@@ -1196,7 +1178,6 @@ void ami602_read_measure(struct work_struct *work)
 {
 	AMI602_ReadSensorDataFromChip();
 }
-
 
 #if 1	
 /* AMI602 BUSY rising isr */

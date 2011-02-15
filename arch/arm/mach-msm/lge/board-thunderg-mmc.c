@@ -1,6 +1,6 @@
 /* arch/arm/mach-msm/lge/board-thunderg-mmc.c
  * Copyright (C) 2010 LGE Corporation.
- * Author: SungEun Kim <cleaneye.kim@lge.com>
+ * Author: SungEun Kim 
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -253,7 +253,6 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 	}
 	set_bit(pdev->id, &vreg_sts);
 
-	
 #if 0
 	if (first_setup == 1) {
 		struct mmc_platform_data *pdata = pdev->dev.platform_data;
@@ -273,7 +272,6 @@ static unsigned int thunderg_sdcc_slot_status(struct device *dev)
 	return !(gpio_get_value(GPIO_MMC_COVER_DETECT)||gpio_get_value(GPIO_SD_DETECT_N));
 }
 #endif
-
 
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 static unsigned int bcm432x_sdcc_wlan_slot_status(struct device *dev)
@@ -295,7 +293,6 @@ static struct mmc_platform_data bcm432x_sdcc_wlan_data = {
 	.nonremovable	= 1,
 };
 #endif  /* CONFIG_LGE_BCM432X_PATCH*/
-
 
 static struct mmc_platform_data msm7x2x_sdcc_data = {
 #ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
@@ -332,7 +329,6 @@ static void __init msm7x2x_init_mmc(void)
 	msm_add_sdcc(1, &msm7x2x_sdcc_data);
 #endif	
 #ifdef CONFIG_MMC_MSM_SDC2_SUPPORT
-
 
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 

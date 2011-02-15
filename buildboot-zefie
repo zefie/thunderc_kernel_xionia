@@ -2,7 +2,7 @@
 ZEF_DATE="`date`"
 
 ./cpkernel && \
-cd ../stockVC_kernel_ramdisk && \
+cd ../ramdisk && \
 ../mkoptinitrd && \
 cd ../buildboot && \
 ./mkbootimg.sh

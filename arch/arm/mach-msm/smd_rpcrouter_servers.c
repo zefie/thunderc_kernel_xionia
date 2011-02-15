@@ -192,6 +192,7 @@ static int rpc_send_accepted_void_reply(struct msm_rpc_endpoint *client,
 	return rc;
 }
 
+/* LGE_CHANGES_S [hoonylove004@lge.com] 2009-12-29, [VS740] AT CMD */
 /* Factory AT CMD feature added based on EVE */
 #ifdef CONFIG_LGE_SUPPORT_AT_CMD
 static int AT_rpc_send_accepted_void_reply(struct msm_rpc_endpoint *client,
@@ -297,6 +298,7 @@ static int AT_rpc_send_accepted_void_reply(struct msm_rpc_endpoint *client,
 	return rc;
 }
 #endif
+/* LGE_CHANGES_E [hoonylove004@lge.com] 2009-12-29, [VS740] */
 /*
  * Interface to be used to start accepted reply message for a
  * request.  Returns the buffer pointer to attach any payload.
@@ -690,6 +692,8 @@ static int rpc_servers_thread(void *data)
 			rc = server->rpc_call(server, req1, rc);
 		}
 
+/* LGE_CHANGES_S [hoonylove004@lge.com] 2009-12-29, [VS740] AT CMD */
+/* Factory AT CMD feature added based on EVE */
 #ifdef CONFIG_LGE_SUPPORT_AT_CMD
 		switch (rc) {
 		case 0:
@@ -700,6 +704,7 @@ static int rpc_servers_thread(void *data)
 
 			break;
 		
+		/* LGE_CHANGES LGE_FACTORY_AT_COMMANDS  */
 		// give Error result to ARM9 AT Command
 		case RPC_RETURN_RESULT_OK:
 		case RPC_RETURN_RESULT_ERROR:
@@ -718,6 +723,7 @@ static int rpc_servers_thread(void *data)
 				(rc), server);
 
 			break;
+		/* LGE_CHANGES LGE_FACTORY_AT_COMMANDS  */
 
 		
 		default:
@@ -743,6 +749,7 @@ static int rpc_servers_thread(void *data)
 			msm_rpc_server_send_accepted_reply(server, 0);
 		}
 #endif
+/* LGE_CHANGES_E [hoonylove004@lge.com] 2009-12-29, [VS740] */	
  free_buffer:
 		xdr_clean_input(&server_xdr);
 		server_xdr.out_index = 0;

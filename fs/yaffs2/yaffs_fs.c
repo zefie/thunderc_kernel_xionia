@@ -488,7 +488,8 @@ static void yaffs_RemoveObjectCallback(yaffs_Object *obj)
          ylist_for_each(i, search_contexts) {
                 if (i) {
                         sc = ylist_entry(i, struct yaffs_SearchContext,others);
-                        if(sc->nextReturn == obj)
+			
+                        if(sc && sc->nextReturn == obj)
                                 yaffs_SearchAdvance(sc);
                 }
 	}

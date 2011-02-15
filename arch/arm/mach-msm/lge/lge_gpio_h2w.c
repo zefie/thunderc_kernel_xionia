@@ -128,6 +128,8 @@ static void insert_headset(void)
    	{
 		H2W_DBG("insert_headset_no-mic-headset \n");
 		switch_set_state(&hi->sdev, LGE_NO_MIC_HEADSET);
+//kiwone, 2009.12.24 , to fix bug
+//no mic headset insert->no mic headset eject->4pole headset insert->button key do not work.		
 		/* Enable button irq */
 		local_irq_save(irq_flags);
 		enable_irq(hi->irq_btn);
@@ -206,6 +208,8 @@ static enum hrtimer_restart button_event_timer_func(struct hrtimer *data)
 	H2W_DBG("");
 
 	if (switch_get_state(&hi->sdev) == LGE_HEADSET
+//kiwone, 2009.12.24, to fix bug
+// 4 pole headset eject->button key is detected
       && (1 == gpio_get_value(hi->gpio_detect))
 	) {
 		if (gpio_get_value(hi->gpio_button_detect)) {

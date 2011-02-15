@@ -48,6 +48,9 @@ struct isx005_reg {
 	
 	const struct isx005_register_address_value_pair *af_normal_reg_settings;
 	uint16_t af_normal_reg_settings_size;
+	
+	const struct isx005_register_address_value_pair *af_auto_reg_settings;
+	uint16_t af_auto_reg_settings_size;
 	const struct isx005_register_address_value_pair *af_macro_reg_settings;
 	uint16_t af_macro_reg_settings_size;
 	const struct isx005_register_address_value_pair *af_manual_reg_settings;
@@ -56,10 +59,6 @@ struct isx005_reg {
 	const struct isx005_register_address_value_pair *af_start_reg_settings;
 	uint16_t af_start_reg_settings_size;
 
-	const struct isx005_register_address_value_pair *effect_off_reg_settings;
-	uint16_t effect_off_reg_settings_size;
-	const struct isx005_register_address_value_pair *effect_aqua_reg_settings;
-	uint16_t effect_aqua_reg_settings_size;
 	
 	const struct isx005_register_address_value_pair 
 		*scene_auto_reg_settings;
@@ -132,5 +131,11 @@ enum {
 	CAMERA_SCENE_NIGHT,
 	CAMERA_SCENE_SUNSET,
 };
+
+#if defined(CONFIG_MACH_MSM7X27_THUNDERG) || \
+	defined(CONFIG_MACH_MSM7X27_THUNDERC)
+
+extern void mdp_load_thunder_lut(int lut_type);
+#endif
 
 #endif /* ISX005_H */

@@ -58,6 +58,7 @@ static unsigned int keypad_col_gpios[] = {38, 37,36};
 
 #define KEYMAP_INDEX(row, col) ((row)*ARRAY_SIZE(keypad_col_gpios) + (col))
 
+
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 static const unsigned short keypad_keymap_thunder[9] = {
 	[KEYMAP_INDEX(0, 0)] = KEY_HOME,
@@ -71,6 +72,7 @@ static const unsigned short keypad_keymap_thunder[9] = {
 	[KEYMAP_INDEX(2, 2)] = KEY_CHAT,
 };
 #else
+
 static const unsigned short keypad_keymap_thunder[6] = {
 	[KEYMAP_INDEX(0, 0)] = KEY_MENU,
 	[KEYMAP_INDEX(0, 1)] = KEY_HOME,
@@ -166,10 +168,12 @@ static int ts_set_vreg(unsigned char onoff)
 {
 	struct vreg *vreg_touch;
 	int rc;
+	
 	static int old_onoff = 0;
 
 	printk("[Touch] %s() onoff:%d\n",__FUNCTION__, onoff);
 
+	
 	if (old_onoff == onoff)
 		return 0;
 
@@ -230,11 +234,9 @@ static void __init thunderc_init_i2c_touch(int bus_num)
 /* accelerometer */
 static int kr3dh_config_gpio(int config)
 {
-	if (config)
-	{		/* for wake state */
+	if (config) { /* for wake state */
 	}
-	else
-	{		/* for sleep state */
+	else { /* for sleep state */
 		gpio_tlmm_config(GPIO_CFG(ACCEL_GPIO_INT, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), GPIO_ENABLE);
 	}
 
@@ -318,7 +320,7 @@ static void __init thunderc_init_i2c_acceleration(int bus_num)
 
 	init_gpio_i2c_pin(&accel_i2c_pdata, accel_i2c_pin[0], &accel_i2c_bdinfo[0]);
 
-	//i2c_register_board_info(bus_num, &accel_i2c_bdinfo[0], 2);
+	
 	if (lge_bd_rev >= 9) /* KR_3DH >= Rev. 1.1 */
 		i2c_register_board_info(bus_num, &accel_i2c_bdinfo[0], 1);
 	else
@@ -327,6 +329,7 @@ static void __init thunderc_init_i2c_acceleration(int bus_num)
 }
 
 /* proximity & ecompass */
+
 
 #define ECOM_POWER_OFF		0
 #define ECOM_POWER_ON		1
@@ -346,10 +349,7 @@ static int ecom_power_set(unsigned char onoff)
 		if (ecom_is_power_on == ECOM_POWER_OFF) {
 			vreg_set_level(gp3_vreg, 3000);
 			vreg_enable(gp3_vreg);
-			/* proximity power on , 
-			 * when we turn off I2C line be set 
-			 * to low caues sensor H/W characteristic 
-			 */
+			
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 			vreg_set_level(gp6_vreg, 2900);
 #else
@@ -364,8 +364,7 @@ static int ecom_power_set(unsigned char onoff)
 			vreg_disable(gp3_vreg);
 
 			/* proximity power on , 
-			 * when we turn off I2C line be set 
-			 * to low caues sensor H/W characteristic 
+			 * when we turn off I2C line be set to low caues sensor H/W characteristic 
 			 */
 			vreg_disable(gp6_vreg);
 
@@ -396,6 +395,7 @@ static int prox_power_set(unsigned char onoff)
 			onoff, prox_is_power_on);
 
 	if (onoff) {
+		
 		if (prox_is_power_on == PROX_POWER_OFF) {
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 			vreg_set_level(gp6_vreg, 2900);
@@ -421,12 +421,8 @@ static int prox_power_set(unsigned char onoff)
 static struct proximity_platform_data proxi_pdata = {
 	.irq_num	= PROXI_GPIO_DOUT,
 	.power		= prox_power_set,
-	.methods	= 0,
-#ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
-	.operation_mode	= 2, //B2 
-#else
-	.operation_mode	= 0,
-#endif
+	.methods		= 0, // normal mode (1 - interrupt mode)
+	.operation_mode		= 0, // A mode (1 - B1, 2 - B2)
 	.debounce	 = 0,
 	.cycle = 2,
 };

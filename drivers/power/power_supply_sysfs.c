@@ -28,6 +28,11 @@
  * (as a macro let's say).
  */
 #if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
+/*
+ * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
+ * 
+ */
+
 #include <mach/msm_battery.h>
 #include <mach/msm_battery_thunderc.h>
 #endif
@@ -44,6 +49,11 @@
  * (as a macro let's say).
  */
 #if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
+/* 
+ * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
+ * 
+ */
+
 #define PSEUDO_BATT_ATTR(_name)					\
 {									\
 	.attr = { .name = #_name, .mode = 0666 },	\
@@ -58,12 +68,14 @@
 	.store = charging_timer_store_property,				\
 }
 
+
 #define BLOCK_CHARGING_ATTR(_name)					\
 {									\
 	.attr = { .name = #_name, .mode = 0666 },	\
 	.show = block_charging_show_property,				\
 	.store = block_charging_store_property,				\
 }
+
 
 #if defined(CONFIG_LGE_THERM_NO_STOP_CHARGING)
 #define THERM_NO_STOP_CHARGING_ATTR(_name)				\
@@ -210,16 +222,18 @@ static ssize_t charging_timer_show_property(struct device *dev,
 	}
 	if (off == POWER_SUPPLY_PROP_CHARGING_TIMER)
 		return sprintf(buf, "%d", value.intval);
+
+	return 0;
 }
 
 extern int charging_timer_set(int intVal);
 
 static ssize_t charging_timer_store_property(struct device *dev,
 		  struct device_attribute *attr,
-		  char *buf, size_t n)
+		  const char *buf, size_t n)
 {
 	int ret = -EINVAL;
-	struct pseudo_batt_info_type info;
+	//struct pseudo_batt_info_type info;
 	int intVal;
 
 	if (sscanf(buf, "%d", &intVal) != 1) {
@@ -231,6 +245,7 @@ static ssize_t charging_timer_store_property(struct device *dev,
 out:
 	return ret;
 }
+
 
 extern void batt_block_charging_set(int);
 static ssize_t block_charging_store_property(struct device *dev,
@@ -297,16 +312,18 @@ static ssize_t therm_no_stop_charging_show_property(struct device *dev,
 	}
 	if (off == POWER_SUPPLY_PROP_THERM_NO_STOP_CHARGING)
 		return sprintf(buf, "%d", value.intval);
+
+	return 0;
 }
 
-extern void msm_batt_therm_no_stop_charging();
+extern void msm_batt_therm_no_stop_charging(int no_stop);
 
 static ssize_t therm_no_stop_charging_store_property(struct device *dev,
 		  struct device_attribute *attr,
-		  char *buf, size_t count)
+		  const char *buf, size_t count)
 {
 	int ret = -EINVAL;
-	struct pseudo_batt_info_type info;
+	//struct pseudo_batt_info_type info;
 	int no_stop;
 
 	if (sscanf(buf, "%d", &no_stop) != 1) {
@@ -363,7 +380,6 @@ static struct device_attribute power_supply_attrs[] = {
 #if defined (CONFIG_MACH_MSM7X27_ALOHAV) || \
 	defined (CONFIG_MACH_MSM7X27_GISELE) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
 
-	/* need to match sysfs name, see BATTERY_TEMPERATURE_PATH */
 	POWER_SUPPLY_ATTR(batt_temp),
 #else
 	POWER_SUPPLY_ATTR(temp),
@@ -382,13 +398,16 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(valid_batt_id),
 	POWER_SUPPLY_ATTR(batt_therm),
 	PSEUDO_BATT_ATTR(pseudo_batt),
+	
 	CHARGING_TIMER_ATTR(charging_timer),
+	
 	BLOCK_CHARGING_ATTR(block_charging),
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 	POWER_SUPPLY_ATTR(batt_therm_state),
+	
 #if defined(CONFIG_LGE_THERM_NO_STOP_CHARGING)
 	THERM_NO_STOP_CHARGING_ATTR(therm_no_stop_charging),	
-#endif
+#endif /* #if defined(CONFIG_LGE_THERM_NO_STOP_CHARGING) */
 #endif
 	
 #endif

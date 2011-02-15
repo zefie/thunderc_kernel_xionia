@@ -4,9 +4,10 @@ obj-$(CONFIG_LGE_SWITCH_GPIO) += lge_gpio_switch.o
 obj-$(CONFIG_LGE_HANDLE_PANIC) += lge_handle_panic.o
 obj-$(CONFIG_LGE_PROC_COMM) += lge_proc_comm.o
 obj-$(CONFIG_LGE_SUPPORT_ERS) += lge_ers.o
-obj-$(CONFIG_LGE_SUPPORT_RAPI) += LG_rapi_client.o
+obj-$(CONFIG_LGE_SUPPORT_RAPI) += lg_rapi_client.o
 obj-$(CONFIG_LGE_MTD_DIRECT_ACCESS) += lge_mtd_direct_access.o
 obj-$(CONFIG_LGE_DIAGTEST) += lg_diag_testmode.o
+obj-$(CONFIG_LGE_DIAGTEST) += lg_diag_testmode_sysfs.o
 obj-$(CONFIG_LGE_DIAGTEST) += lg_fw_diag_class.o
 obj-$(CONFIG_LGE_DIAGTEST) += lg_fw_diag_communication.o
 # LGE_CHANGE_S [sm.shim@lge.com] 2010-07-26,add lg_diag_event_log.c for key logging in diag testmode cmd 22

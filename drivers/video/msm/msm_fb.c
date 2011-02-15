@@ -102,7 +102,17 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg);
 static int msm_fb_mmap(struct fb_info *info, struct vm_area_struct * vma);
 
+#if CONFIG_LGE_GRAM_REFRESH_PATCH
+static struct fb_var_screeninfo *last_var;
+static struct fb_info *last_info;
+static struct early_suspend additional_early_suspend;
+static void msmfb_early_suspend_early(struct early_suspend *h);
+static void msmfb_late_resume_late(struct early_suspend *h);
+#endif
+
+/* LGE_CHANGE_S, [munyoung@lge.com] booting logo */
 #ifdef CONFIG_FB_MSM_LOGO
+
 static int is_console_inactive = 0;
 
 static void msm_fb_set_console_inactive(int inactive)
@@ -117,6 +127,7 @@ int msm_fb_get_console_inactive(void)
 }
 EXPORT_SYMBOL(msm_fb_get_console_inactive);
 #endif
+/* LGE_CHANGE_E, [munyoung@lge.com] booting logo */
 
 #ifdef MSM_FB_ENABLE_DBGFS
 
@@ -495,6 +506,19 @@ static void msmfb_early_resume(struct early_suspend *h)
 						    early_suspend);
 	msm_fb_resume_sub(mfd);
 }
+
+#if CONFIG_LGE_GRAM_REFRESH_PATCH
+static void msmfb_early_suspend_early(struct early_suspend *h)
+{
+	/* do nothing */
+}
+
+static void msmfb_late_resume_late(struct early_suspend *h)
+{
+	memset((void *)last_info->screen_base, 0, last_info->fix.smem_len);
+	msm_fb_pan_display(last_var, last_info);
+}
+#endif
 #endif
 
 void msm_fb_set_backlight(struct msm_fb_data_type *mfd, __u32 bkl_lvl, u32 save)
@@ -955,6 +979,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	mfd->panel_power_on = FALSE;
 
 #ifdef CONFIG_FB_MSM_LOGO
+	/* LGE_CHANGE,[munyoung@lge.com] booting logo */
 	msm_fb_set_console_inactive(1);
 #endif
 
@@ -1007,6 +1032,13 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	mfd->early_suspend.resume = msmfb_early_resume;
 	mfd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 2;
 	register_early_suspend(&mfd->early_suspend);
+
+#if CONFIG_LGE_GRAM_REFRESH_PATCH
+	additional_early_suspend.suspend = msmfb_early_suspend_early;
+	additional_early_suspend.resume = msmfb_late_resume_late;
+	additional_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 10;
+	register_early_suspend(&additional_early_suspend);
+#endif
 #endif
 
 #ifdef MSM_FB_ENABLE_DBGFS
@@ -1152,10 +1184,12 @@ static int msm_fb_open(struct fb_info *info, int user)
 		}
 	}
 
+/* LGE_CHANGE_S, [munyoung@lge.com] booting logo */
 #ifdef CONFIG_FB_MSM_LOGO
 	if(mfd->ref_cnt > 1 && msm_fb_get_console_inactive())
 		msm_fb_set_console_inactive(0);
 #endif
+/* LGE_CHANGE_E, [munyoung@lge.com] booting logo */
 
 	mfd->ref_cnt++;
 	return 0;
@@ -1194,6 +1228,9 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 	struct mdp_dirty_region dirty;
 	struct mdp_dirty_region *dirtyPtr = NULL;
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+
+	last_var = var;
+	last_info = info;
 
 	if ((!mfd->op_enable) || (!mfd->panel_power_on))
 		return -EPERM;

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2010 LGE. All rights reserved.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
+
 #include <linux/module.h>
 #include <linux/delay.h>
 #include <mach/lg_diagcmd.h>
@@ -13,13 +27,17 @@ extern unsigned int LGF_KeycodeTrans(word input);
 
 static unsigned saveKeycode = 0;
 
+/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-11, virtual key */
 extern struct input_dev *get_ats_input_dev(void);
 
 void SendKeyToInputDevie(unsigned int code, int value)
 {
 	struct input_dev *ats_input_dev;
-	printk("keycode = %d, value = %d\n", code, value);
 
+	/* LGE_CHANGE [james.jang@lge.com] 2010-09-05, block it */
+	// printk("keycode = %d, value = %d\n", code, value);
+
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-11, virtual key */
 	ats_input_dev = get_ats_input_dev();
 	if (ats_input_dev)
 		input_report_key(ats_input_dev, code, value);

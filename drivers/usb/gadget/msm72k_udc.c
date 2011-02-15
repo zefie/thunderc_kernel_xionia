@@ -306,6 +306,7 @@ static void usb_chg_stop(struct work_struct *w)
 static void usb_chg_detect(struct work_struct *w)
 {
 	struct usb_info *ui = container_of(w, struct usb_info, chg_det.work);
+	struct msm_otg *otg = to_msm_otg(ui->xceiv);
 	enum chg_type temp = USB_CHG_TYPE__INVALID;
 	unsigned long flags;
 	int maxpower;
@@ -320,6 +321,7 @@ static void usb_chg_detect(struct work_struct *w)
 	spin_unlock_irqrestore(&ui->lock, flags);
 
 	hsusb_chg_connected(temp);
+	atomic_set(&otg->chg_type, temp);
 	maxpower = usb_get_max_power(ui);
 	if (maxpower > 0)
 		hsusb_chg_vbus_draw(maxpower);
@@ -332,6 +334,12 @@ static void usb_chg_detect(struct work_struct *w)
 	 * driver will reacquire wakelocks for any sub-sequent usb interrupts.
 	 * */
 	if (temp == USB_CHG_TYPE__WALLCHARGER) {
+		/* Workaround: Reset PHY in SE1 state */
+		otg->reset(ui->xceiv);
+		/* select DEVICE mode */
+		writel(0x12, USB_USBMODE);
+		msleep(1);
+		otg_set_suspend(ui->xceiv, 1);
 		msm72k_pm_qos_update(0);
 		wake_unlock(&ui->wlock);
 	}
@@ -1313,6 +1321,7 @@ static void usb_do_work(struct work_struct *w)
 			 */
 			if (flags & USB_FLAG_VBUS_OFFLINE) {
 				enum chg_type temp;
+				struct msm_otg *otg = to_msm_otg(ui->xceiv);
 
 				spin_lock_irqsave(&ui->lock, iflags);
 				temp = ui->chg_type;
@@ -1361,6 +1370,7 @@ static void usb_do_work(struct work_struct *w)
 
 				switch_set_state(&ui->sdev, 0);
 				/* power down phy, clock down usb */
+				otg->reset(ui->xceiv);
 				otg_set_suspend(ui->xceiv, 1);
 
 				ui->state = USB_STATE_OFFLINE;

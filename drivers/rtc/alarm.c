@@ -71,6 +71,27 @@ static struct platform_device *alarm_platform_dev;
 struct alarm_queue alarms[ANDROID_ALARM_TYPE_COUNT];
 static bool suspended;
 
+#ifdef CONFIG_LGE_RTC_INTF_ALARM_SYNC
+static bool alarm_need_to_update = true; /* need to update alarm before first sleep */
+static bool force_to_update = true;
+
+bool alarm_need_to_set(void)
+{
+	if (force_to_update) {
+		return true;
+	}
+
+	if (!alarm_need_to_update) {
+		alarm_need_to_update = true;
+		return false;
+	}
+
+	return true;
+}
+
+EXPORT_SYMBOL(alarm_need_to_set);
+#endif
+
 static void update_timer_locked(struct alarm_queue *base, bool head_removed)
 {
 	struct alarm *alarm;
@@ -114,6 +135,7 @@ static void alarm_enqueue_locked(struct alarm *alarm)
 	int leftmost = 1;
 	s64 stime;
 	ktime_t now;
+	
 
 	pr_alarm(FLOW, "added alarm, type %d, func %pF at %lld\n",
 		alarm->type, alarm->function, ktime_to_ns(alarm->expires));
@@ -130,6 +152,7 @@ static void alarm_enqueue_locked(struct alarm *alarm)
 				task_pid_nr(current),
 				get_task_comm(comm, current));
 	}
+	
 
 	if (base->first == &alarm->node)
 		base->first = rb_next(&alarm->node);
@@ -454,6 +477,15 @@ static int alarm_suspend(struct platform_device *pdev, pm_message_t state)
 			spin_unlock_irqrestore(&alarm_slock, flags);
 		}
 	}
+	
+#ifdef CONFIG_LGE_RTC_INTF_ALARM_SYNC
+	if (suspended) {
+		if (force_to_update)
+			force_to_update = false;
+
+		alarm_need_to_update = false;
+	}
+#endif
 	return err;
 }
 

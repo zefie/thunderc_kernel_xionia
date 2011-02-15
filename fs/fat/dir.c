@@ -97,7 +97,7 @@ next:
 
 	*bh = sb_bread(sb, phys);
 	if (*bh == NULL) {
-		// suppressed the message
+		
 #if defined(CONFIG_MACH_LGE)
 		// nothing
 #else

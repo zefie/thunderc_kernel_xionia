@@ -31,8 +31,11 @@ PACK (void *)LGF_LcdQTest (PACK (void	*)req_pkt_ptr, uint16		pkt_len );
 PACK (void *)LGF_KeyPress (PACK (void	*)req_pkt_ptr, uint16		pkt_len );
 PACK (void *)LGF_ScreenShot (PACK (void	*)req_pkt_ptr, uint16		pkt_len ); 
 PACK (void *)LGF_Udm (PACK (void	*)req_pkt_ptr, uint16		pkt_len ); 
+
 PACK (void *)LGF_MTCProcess (PACK (void *)req_pkt_ptr, uint16	pkt_len );
+
 PACK (void *)LGF_PartScreenShot (PACK (void *)req_pkt_ptr, uint16 pkt_len ); 
+
 
 void diagpkt_commit (PACK(void *)pkt);
 
@@ -43,8 +46,10 @@ static const diagpkt_user_table_entry_type registration_table[] =
 	{DIAG_HS_KEY_F,  DIAG_HS_KEY_F, LGF_KeyPress},
 	{DIAG_LGF_SCREEN_SHOT_F, DIAG_LGF_SCREEN_SHOT_F, LGF_ScreenShot},
 	{DIAG_UDM_SMS_MODE, DIAG_UDM_SMS_MODE, LGF_Udm},
+
 	{DIAG_MTC_F, DIAG_MTC_F, LGF_MTCProcess},
 	{DIAG_LGF_SCREEN_PARTSHOT_F, DIAG_LGF_SCREEN_PARTSHOT_F, LGF_PartScreenShot},
+
 };
 
 /* This is the user dispatch table. */
@@ -63,18 +68,16 @@ static unsigned int gPkt_commit_fail = 0;
 
 void* lg_diag_req_pkt_ptr;
 
+
 wlan_status lg_diag_req_wlan_status={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-udm_sms_status_new lg_diag_req_udm_sms_status_new = {0};
+
+udm_sms_status_new lg_diag_req_udm_sms_status_new;
 uint16 lg_diag_req_pkt_length;
 uint16 lg_diag_rsp_pkt_length;
 char lg_diag_cmd_line[LG_DIAG_CMD_LINE_LEN];
 
-#if 1 	//LG_FW_MTC_GISELE
 static int diagchar_init_complete = 0;
-static struct diag_request *writeBuffer = NULL;
-#endif  //LG_FW_MTC_GISELE
-/*===========================================================================
-===========================================================================*/
+
 PACK(void *) diagpkt_alloc (diagpkt_cmd_code_type code, unsigned int length)
 {
 	diagpkt_lsm_rsp_type *item = NULL;
@@ -98,7 +101,9 @@ PACK(void *) diagpkt_alloc (diagpkt_cmd_code_type code, unsigned int length)
 		 * from client's heap using a malloc call 
 		 * if the pre-malloced buffers are not available.
 		 * So if this fails, it means that the client is out of heap. 
-		 * */
+		 */
+		printk(KERN_ERR "LG DIAG: %s(): failed the memory allocation\n",
+				__func__);
 		return NULL;
 	}
 	/* Fill in the fact that this is a response */
@@ -157,18 +162,18 @@ static ssize_t write_cmd_pkt(struct device *dev,
 	int i;
 #endif
 
-	printk(KERN_ERR "\n LG_FW : print received packet :len(%d) \n",
-			lg_diag_rsp_pkt_length);
+	printk(KERN_DEBUG "LG DIAG: %s():  print received packet :len(%d) \n",
+			__func__, lg_diag_rsp_pkt_length);
 
 	rsp_pkt_ptr = (DIAG_TEST_MODE_F_rsp_type *)diagpkt_alloc(DIAG_TEST_MODE_F, 
 			lg_diag_rsp_pkt_length);
 	memcpy(rsp_pkt_ptr, buf, lg_diag_rsp_pkt_length);
 
 #ifdef LG_DIAG_DEBUG
-	for (i=0;i<lg_diag_rsp_pkt_length;i++) {
-		printk(KERN_ERR "0x%x ",*((unsigned char*)(rsp_pkt_ptr + i)));
+	for (i = 0; i < lg_diag_rsp_pkt_length; i++) {
+		printk("0x%x ",*((unsigned char*)(rsp_pkt_ptr + i)));
 	}
-	printk(KERN_ERR "\n");
+	printk(KERN_DEBUG "\n");
 #endif
 	diagpkt_commit(rsp_pkt_ptr);
 	return size;
@@ -190,17 +195,17 @@ static ssize_t write_cmd_pkt_length(struct device *dev,
 	int write_len = 2;
 
 	memcpy((void*)&lg_diag_rsp_pkt_length, buf, write_len);
-	printk( KERN_DEBUG "LG_FW : write_cmd_pkt_length = %d\n",lg_diag_rsp_pkt_length);  
+	printk(KERN_DEBUG "LG DIAG : write_cmd_pkt_length = %d\n",
+			lg_diag_rsp_pkt_length);  
 	return write_len;
 }
 
-#if 1
 static ssize_t read_mtc_cmd_pkt(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
 	memcpy(buf, lg_diag_mtc_req_pkt_ptr, lg_diag_mtc_req_pkt_length);
 
-	printk( KERN_DEBUG "read_mtc_cmd_pkt\n");  
+	printk(KERN_DEBUG "read_mtc_cmd_pkt\n");  
 	return lg_diag_mtc_req_pkt_length;
 }
 
@@ -209,13 +214,12 @@ static ssize_t read_mtc_cmd_pkt_length(struct device *dev, struct device_attribu
 {
 	int read_len = 2;
 
-	printk( KERN_DEBUG "read_mtc_cmd_pkt_length\n"); 
+	printk(KERN_DEBUG "read_mtc_cmd_pkt_length\n"); 
 
 	memcpy(buf, &lg_diag_mtc_req_pkt_length, read_len);
 	return read_len;
 }
 
-#endif 
 
 static ssize_t read_wlan_status(struct device *dev, struct device_attribute *attr,
 		char *buf)
@@ -223,27 +227,27 @@ static ssize_t read_wlan_status(struct device *dev, struct device_attribute *att
 	int wlan_status_length = sizeof(wlan_status);
 	memcpy(buf, &lg_diag_req_wlan_status, wlan_status_length);
 
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(wlan_status)= %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(wlan_status)= %d\n",
 			lg_diag_req_wlan_status.wlan_status);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(g_wlan_status) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(g_wlan_status) = %d\n",
 			lg_diag_req_wlan_status.g_wlan_status);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(rx_channel) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(rx_channel) = %d\n",
 			lg_diag_req_wlan_status.rx_channel);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(rx_per) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(rx_per) = %d\n",
 			lg_diag_req_wlan_status.rx_per);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(tx_channel) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(tx_channel) = %d\n",
 			lg_diag_req_wlan_status.tx_channel);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(goodFrames) = %ld\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(goodFrames) = %ld\n",
 			lg_diag_req_wlan_status.goodFrames);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(badFrames) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(badFrames) = %d\n",
 			lg_diag_req_wlan_status.badFrames);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(rxFrames) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(rxFrames) = %d\n",
 			lg_diag_req_wlan_status.rxFrames);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(wlan_data_rate) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(wlan_data_rate) = %d\n",
 			lg_diag_req_wlan_status.wlan_data_rate);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(wlan_payload) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(wlan_payload) = %d\n",
 			lg_diag_req_wlan_status.wlan_payload);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: read_wlan_status(wlan_data_rate_recent) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: read_wlan_status(wlan_data_rate_recent) = %d\n",
 			lg_diag_req_wlan_status.wlan_data_rate_recent);
 
 	return wlan_status_length;
@@ -257,32 +261,33 @@ static ssize_t write_wlan_status(struct device *dev,
 	int wlan_status_length = sizeof(wlan_status);
 	memcpy(&lg_diag_req_wlan_status, buf, wlan_status_length);
 
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(wlan_status)= %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(wlan_status)= %d\n",
 			lg_diag_req_wlan_status.wlan_status);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(g_wlan_status) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(g_wlan_status) = %d\n",
 			lg_diag_req_wlan_status.g_wlan_status);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(rx_channel) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(rx_channel) = %d\n",
 			lg_diag_req_wlan_status.rx_channel);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(rx_per) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(rx_per) = %d\n",
 			lg_diag_req_wlan_status.rx_per);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(tx_channel) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(tx_channel) = %d\n",
 			lg_diag_req_wlan_status.tx_channel);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(goodFrames) = %ld\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(goodFrames) = %ld\n",
 			lg_diag_req_wlan_status.goodFrames);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(badFrames) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(badFrames) = %d\n",
 			lg_diag_req_wlan_status.badFrames);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(rxFrames) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(rxFrames) = %d\n",
 			lg_diag_req_wlan_status.rxFrames);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(wlan_data_rate) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(wlan_data_rate) = %d\n",
 			lg_diag_req_wlan_status.wlan_data_rate);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(wlan_payload) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(wlan_payload) = %d\n",
 			lg_diag_req_wlan_status.wlan_payload);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: write_wlan_status(wlan_data_rate_recent) = %d\n",
+	printk(KERN_DEBUG "LG DIAG: write_wlan_status(wlan_data_rate_recent) = %d\n",
 			lg_diag_req_wlan_status.wlan_data_rate_recent);
-	printk( KERN_DEBUG "LG_FW [KERNEL]: SIZEOF = %d\n", sizeof(wlan_status));
+	printk(KERN_DEBUG "LG DIAG: SIZEOF = %d\n", sizeof(wlan_status));
 
 	return size;
 }
+
 static ssize_t read_sms_status_new(struct device *dev, struct device_attribute *attr,
 	char *buf)
 {
@@ -297,13 +302,18 @@ static ssize_t write_sms_status_new(struct device *dev,
 					 const char *buf, size_t size)
 {
 	int udm_sms_statu_len = sizeof(udm_sms_status_new);
+	
+	
+	memset((void*)&lg_diag_req_udm_sms_status_new, 0, sizeof(udm_sms_status_new));
 
 	memcpy((void*)&lg_diag_req_udm_sms_status_new, buf, udm_sms_statu_len);
 	return udm_sms_statu_len;
 }
 
+
 static DEVICE_ATTR(cmd_pkt, S_IRUGO | S_IWUSR,read_cmd_pkt, write_cmd_pkt);
 static DEVICE_ATTR(length, S_IRUGO | S_IWUSR,read_cmd_pkt_length, write_cmd_pkt_length);
+
 static DEVICE_ATTR(wlan_status, S_IRUGO | S_IWUSR,read_wlan_status, write_wlan_status);
 
 static DEVICE_ATTR(get_sms, S_IRUGO | S_IWUSR,read_sms_status_new, write_sms_status_new);
@@ -314,10 +324,9 @@ static DEVICE_ATTR(rsp_get_sms, S_IRUGO | S_IWUSR,read_sms_status_new, write_sms
 static DEVICE_ATTR(rsp_set_sms, S_IRUGO | S_IWUSR,read_sms_status_new, write_sms_status_new);
 
 static DEVICE_ATTR(rsp_sms_status, S_IRUGO | S_IWUSR,read_sms_status_new, write_sms_status_new);
-#if 1 //LG_FW_MTC_GISELE
+
 static DEVICE_ATTR(mtc_cmd_pkt, S_IRUGO | S_IWUSR,read_mtc_cmd_pkt,  NULL);
 static DEVICE_ATTR(mtc_length, S_IRUGO | S_IWUSR,read_mtc_cmd_pkt_length, NULL);
-#endif //LG_FW_MTC_GISELE
 
 int lg_diag_create_file(struct platform_device *pdev)
 {
@@ -325,109 +334,110 @@ int lg_diag_create_file(struct platform_device *pdev)
 
 	ret = device_create_file(&pdev->dev, &dev_attr_cmd_pkt);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file create fail\n");
+		printk( KERN_DEBUG "LG DIAG: diag device file create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_cmd_pkt);
 		return ret;
 	}
 	
 	ret = device_create_file(&pdev->dev, &dev_attr_length);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file2 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file2 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_length);
 		return ret;
 	}
+	
 
 	ret = device_create_file(&pdev->dev, &dev_attr_wlan_status);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_wlan_status);
 		return ret;
 	}
+	
 	ret = device_create_file(&pdev->dev, &dev_attr_sms_status);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_sms_status);
 		return ret;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_get_sms);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_get_sms);
 		return ret;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_set_sms);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_set_sms);
 		return ret;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_rsp_sms_status);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_rsp_sms_status);
 		return ret;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_rsp_get_sms);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_rsp_get_sms);
 		return ret;
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_rsp_set_sms);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file3 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file3 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_rsp_set_sms);
 		return ret;
 	}
 
-#if 1 
+	
 	ret = device_create_file(&pdev->dev, &dev_attr_mtc_cmd_pkt);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_mtc_cmd_pkt);
 		return ret;
 	}
 	
 	ret = device_create_file(&pdev->dev, &dev_attr_mtc_length);
 	if (ret) {
-		printk( KERN_DEBUG "LG_FW : diag device file2 create fail\n");
+		printk( KERN_DEBUG "LG DIAG : diag device file2 create fail\n");
 		device_remove_file(&pdev->dev, &dev_attr_mtc_length);
 		return ret;
 	}
-#endif 
-  return ret;
+	return ret;
 }
 EXPORT_SYMBOL(lg_diag_create_file);
 
 int lg_diag_remove_file(struct platform_device *pdev)
 {
 	device_remove_file(&pdev->dev, &dev_attr_cmd_pkt);
+	
 	device_remove_file(&pdev->dev, &dev_attr_wlan_status);
+	
 	device_remove_file(&pdev->dev, &dev_attr_sms_status);
 	device_remove_file(&pdev->dev, &dev_attr_get_sms);
 	device_remove_file(&pdev->dev, &dev_attr_set_sms);
 	device_remove_file(&pdev->dev, &dev_attr_rsp_sms_status);
 	device_remove_file(&pdev->dev, &dev_attr_rsp_get_sms);
 	device_remove_file(&pdev->dev, &dev_attr_rsp_set_sms);
+	
 	device_remove_file(&pdev->dev, &dev_attr_length);
 
-#if 1 
 	device_remove_file(&pdev->dev, &dev_attr_mtc_cmd_pkt);
 	device_remove_file(&pdev->dev, &dev_attr_mtc_length);
-#endif
-  return 0;
+	return 0;
 }
 EXPORT_SYMBOL(lg_diag_remove_file);
 
 static int lg_diag_app_execute(void)
 {
 	int ret;
-	char cmdstr[100];
 	int fd;
 	char *envp[] = {
 		"HOME=/",
@@ -435,29 +445,29 @@ static int lg_diag_app_execute(void)
 		NULL,
 	};
 
-char *argv[] = {
-	"sh",
-	"-c",
-	cmdstr,
-	NULL,
-};	
+	char *argv[] = {
+		"/system/bin/lg_diag_app",
+		NULL,
+	};	
 
-	if ( (fd = sys_open((const char __user *) "/system/bin/lg_diag_app", O_RDONLY ,0) ) < 0 ) {
-		printk("\n can not open /system/bin/lg_diag - execute /system/bin/lg_diag_app\n");
-		sprintf(cmdstr, "/system/bin/lg_diag_app\n");
+	
+	fd = sys_open((const char __user *) "/system/bin/lg_diag_app", O_RDONLY ,0);
+	if (fd < 0) {
+		printk(KERN_ERR "LG DIAG: can not open /system/bin/lg_diag_app\n");
 	}
 	else {
-		printk("\n execute /system/bin/lg_diag_app\n");
-		sprintf(cmdstr, "/system/bin/lg_diag_app\n");
+		printk(KERN_DEBUG "LG DIAG: execute /system/bin/lg_diag_app\n");
 		sys_close(fd);
 	}
+	
 
-	printk(KERN_INFO "execute - %s", cmdstr);
-	if ((ret = call_usermodehelper("/system/bin/sh", argv, envp, UMH_WAIT_PROC)) != 0) {
-		printk(KERN_ERR "LG_DIAG failed to run \": %i\n", ret);
+	printk(KERN_INFO "LG DIAG execute - %s\n", argv[0]);
+	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+	if (ret != 0) {
+		printk(KERN_ERR "LG DIAG: lg_diag_app failed to run: %i\n", ret);
 	}
 	else {
-		printk(KERN_INFO "LG_DIAG execute ok");
+		printk(KERN_INFO "LG DIAG: lg_diag_app execute ok\n");
 	}
 	return ret;
 }
@@ -466,66 +476,57 @@ static int diagchar_open(void)
 {
 	int i = 0;
 
-	if (driver) {
-		mutex_lock(&driver->diagchar_mutex);
+	if (!driver)
+		return -ENOMEM;
 
-		for (i = 0; i < driver->num_clients; i++)
-			if (driver->client_map[i].pid == 0)
-				break;
+	mutex_lock(&driver->diagchar_mutex);
 
-		if (i < driver->num_clients) {
-			driver->client_map[i].pid = current->tgid;
+	for (i = 0; i < driver->num_clients; i++)
+		if (driver->client_map[i].pid == 0)
+			break;
+
+	if (i < driver->num_clients) {
+		driver->client_map[i].pid = current->tgid;
 #ifdef LG_DIAG_DEBUG
-			printk(KERN_DEBUG "LG_FW : client_map id = 0x%x\n", driver->client_map[i]);
+		printk("LG DIAG: client_map id = 0x%x\n", 
+				driver->client_map[i]);
 #endif
-		}
-		else {
-			mutex_unlock(&driver->diagchar_mutex);
-			return -ENOMEM;
-		}
-
-		driver->data_ready[i] |= MSG_MASKS_TYPE;
-		driver->data_ready[i] |= EVENT_MASKS_TYPE;
-		driver->data_ready[i] |= LOG_MASKS_TYPE;
-
-		if (driver->ref_count == 0)
-			diagmem_init(driver);
-		driver->ref_count++;
-
-		#if 1 	//LG_FW_MTC_GISELE
-		diagchar_init_complete = 1;
-		#endif  //LG_FW_MTC_GISELE
-
-		mutex_unlock(&driver->diagchar_mutex);
-		return 0;
 	}
-	return -ENOMEM;
+	else {
+		mutex_unlock(&driver->diagchar_mutex);
+		return -ENOMEM;
+	}
+
+	driver->data_ready[i] |= MSG_MASKS_TYPE;
+	driver->data_ready[i] |= EVENT_MASKS_TYPE;
+	driver->data_ready[i] |= LOG_MASKS_TYPE;
+
+	if (driver->ref_count == 0)
+		diagmem_init(driver);
+	driver->ref_count++;
+
+	//LG_FW_MTC_GISELE
+	diagchar_init_complete = 1;
+
+	mutex_unlock(&driver->diagchar_mutex);
+	return 0;
 }
 
-#if 1 
-//static int diagchar_ioctl(unsigned int iocmd, unsigned long ioarg)
 static int __diagchar_ioctl(unsigned int iocmd, unsigned long ioarg, int check_usb)
-#endif 
 {
 	int i, count_entries = 0;
-	int success = -1;
+	int err = -1;
 	struct mtc_data_buffer *mb;
 
-#if 1 
-	static int count = 0; 
-
 	
-	if (check_usb) {
-		if (!driver->usb_connected) {
-			/* Drop the diag payload */
-			return -EIO;
-		}
+	if (check_usb && !driver->usb_connected) {
+		/* Drop the diag payload */
+		return -EIO;
 	}
 
 	if (diagchar_init_complete != 1) {
 		return -1;
 	}
-#endif 
 
 	if (iocmd == DIAG_IOCTL_COMMAND_REG) {
 		struct bindpkt_params_per_process *pkt_params =
@@ -543,7 +544,7 @@ static int __diagchar_ioctl(unsigned int iocmd, unsigned long ioarg, int check_u
 					 pkt_params->params->cmd_code_lo;
 				driver->table[i].process_id = current->tgid;
 				count_entries++;
-				success = 0;
+				err = 0;
 				if (pkt_params->count > count_entries)
 					pkt_params->params++;
 				else
@@ -551,38 +552,39 @@ static int __diagchar_ioctl(unsigned int iocmd, unsigned long ioarg, int check_u
 			}
 		}
 	}
-
-#if 1
-	if(iocmd == DIAG_IOCTL_BULK_DATA){
+	else if (iocmd == DIAG_IOCTL_BULK_DATA){
 		mb = (struct mtc_data_buffer *)ioarg;
 		mutex_lock(&driver->diagchar_mutex);
 		if (!buf_hdlc)
 			buf_hdlc = diagmem_alloc(driver, HDLC_OUT_BUF_SIZE,
 							 POOL_TYPE_HDLC);
 
-		if (!buf_hdlc) {
+		
+		if (NULL == buf_hdlc) {
 			mutex_unlock(&driver->diagchar_mutex);
 			return -1;
 		}
 
-		printk("alloc memory for driver_mtc->usb_write_ptr_svc \n");
+		printk(KERN_DEBUG "LG DIAG: alloc memory for driver_mtc->usb_write_ptr_svc \n");
 		driver->usb_write_ptr_svc = (struct diag_request *)
 			(diagmem_alloc(driver, sizeof(struct diag_request),
 					POOL_TYPE_USB_STRUCT));
 
-        if(!driver->usb_write_ptr_svc) {
+		
+		if(NULL == driver->usb_write_ptr_svc) {
 			mutex_unlock(&driver->diagchar_mutex);
 			return -1;
 		}
-
+		
 		/* TODO: check the length, overflow? */
 		memcpy(buf_hdlc, mb->data, mb->data_length);
 
 		driver->usb_write_ptr_svc->buf = buf_hdlc;
 		driver->usb_write_ptr_svc->length = mb->data_length;
 
-		success = diag_write(driver->usb_write_ptr_svc);
-		if (success) {
+		err = diag_write(driver->usb_write_ptr_svc);
+		if (err) {
+			
 			diagmem_free(driver, driver->usb_write_ptr_svc,
 					POOL_TYPE_USB_STRUCT);
 			/* Free the buffer right away if write failed */
@@ -591,32 +593,31 @@ static int __diagchar_ioctl(unsigned int iocmd, unsigned long ioarg, int check_u
 		buf_hdlc = NULL;
 
 		mutex_unlock(&driver->diagchar_mutex);
-
 	}
-#endif 
 
-	return success;
+	return err;
 }
+
 
 int diagchar_ioctl(unsigned int iocmd, unsigned long ioarg)
 {
 	return __diagchar_ioctl(iocmd, ioarg, 1);
 }
-#if 1 
 EXPORT_SYMBOL(diagchar_ioctl);
-#endif 
 
 static int diagchar_read(char *buf, int count )
 {
 	int index = -1, i = 0, ret = 0;
 	int data_type;
-	for (i = 0; i < driver->num_clients; i++)
+
+	for (i = 0; i < driver->num_clients; i++) {
 		if (driver->client_map[i].pid == current->tgid)
 			index = i;
+	}
 
 	if (index == -1) {
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_DEBUG "LG_FW : client_map id not found \n");
+		printk("LG DIAG: client_map id not found \n");
 #endif
 		return -EINVAL;
 	}
@@ -624,7 +625,7 @@ static int diagchar_read(char *buf, int count )
 				  driver->data_ready[index]);
 
 #ifdef LG_DIAG_DEBUG
-	printk(KERN_DEBUG "LG_FW : diagchar_read	data_ready\n");
+	printk("LG DIAG : diagchar_read data_ready\n");
 #endif
 
 	mutex_lock(&driver->diagchar_mutex);
@@ -703,10 +704,8 @@ static int diagchar_write( const char *buf, size_t count)
 	void *buf_copy;
 	int payload_size;
 
-#if 1 //LG_FW_MTC_GISELE	
 	if(diagchar_init_complete != 1)
 		return -1;
-#endif //LG_FW_MTC_GISELE
 
 	if (!timer_in_progress)	{
 		timer_in_progress = 1;
@@ -723,42 +722,48 @@ static int diagchar_write( const char *buf, size_t count)
 	payload_size = count - 4;
 
 	buf_copy = diagmem_alloc(driver, payload_size, POOL_TYPE_COPY);
-	if (!buf_copy) {
+	if (NULL == buf_copy) {
 		driver->dropped_count++;
 		return -ENOMEM;
 	}
 
 	memcpy(buf_copy, buf + 4, payload_size);
 #ifdef LG_DIAG_DEBUG
-	printk(KERN_DEBUG "LG_FW : data is --> \n");
+	printk("LG DIAG: data is --> \n");
 	for (i = 0; i < payload_size; i++)
-		printk(KERN_DEBUG "\t %x \t", *(((unsigned char *)buf_copy)+i));
+		printk("\t %x \t", *(((unsigned char *)buf_copy)+i));
+	printk("\n");
 #endif
 	send.state = DIAG_STATE_START;
 	send.pkt = buf_copy;
 	send.last = (void *)(buf_copy + payload_size - 1);
 	send.terminate = 1;
 #ifdef LG_DIAG_DEBUG
-	printk(KERN_INFO "\n LG_FW : 1 Already used bytes in buffer %d, and"
+	printk("LG DIAG: 1 Already used bytes in buffer %d, and"
 	" incoming payload size is %d \n", driver->used, payload_size);
 #endif
 	mutex_lock(&driver->diagchar_mutex);
-	if (!buf_hdlc)
+	if (NULL == buf_hdlc) {
 		buf_hdlc = diagmem_alloc(driver, HDLC_OUT_BUF_SIZE,
 						 POOL_TYPE_HDLC);	
-	if (!buf_hdlc) {
-		ret = -ENOMEM;
-		goto fail_free_hdlc;
+		
+		if (NULL == buf_hdlc) {
+			ret = -ENOMEM;
+			goto fail_free_hdlc;
+		}
+		
 	}
 
 	if (HDLC_OUT_BUF_SIZE - driver->used <= payload_size + 7) {
 		driver->usb_write_ptr_svc = (struct diag_request *)
 			(diagmem_alloc(driver, sizeof(struct diag_request),
 				POOL_TYPE_USB_STRUCT));
-		if (driver->usb_write_ptr_svc == NULL) {
+		
+		if (NULL == driver->usb_write_ptr_svc) {
 			ret = -EIO;
 			goto fail_free_usb_struct;
 		}
+		
 		driver->usb_write_ptr_svc->buf = buf_hdlc;
 		driver->usb_write_ptr_svc->length = driver->used;
 		err = diag_write(driver->usb_write_ptr_svc);
@@ -771,30 +776,33 @@ static int diagchar_write( const char *buf, size_t count)
 		}
 		buf_hdlc = NULL;
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_INFO "\nLG_FW : size written is %d \n", driver->used);
+		printk("LG DIAG: size written is %d \n", driver->used);
 #endif
 		driver->used = 0;
 		buf_hdlc = diagmem_alloc(driver, HDLC_OUT_BUF_SIZE,
 							 POOL_TYPE_HDLC);
-		if (!buf_hdlc) {
+		if (NULL == buf_hdlc) {
 			ret = -ENOMEM;
 			goto fail_free_hdlc;
 		}
 	}
 
 	enc.dest = buf_hdlc + driver->used;
+	
 	enc.dest_last = (void *)(buf_hdlc + HDLC_OUT_BUF_SIZE -1);
+	
 	diag_hdlc_encode(&send, &enc);
 
 #ifdef LG_DIAG_DEBUG
-	printk(KERN_INFO "\n LG_FW : 2 Already used bytes in buffer %d, and"
+	printk("LG DIAG: 2 Already used bytes in buffer %d, and"
 	" incoming payload size is %d \n", driver->used, payload_size);
-	printk(KERN_DEBUG "LG_FW : hdlc encoded data is --> \n");
+	printk("LG DIAG: hdlc encoded data is --> \n");
 	for (i = 0; i < payload_size + 8; i++) {
-		printk(KERN_DEBUG "\t %x \t", *(((unsigned char *)buf_hdlc)+i));
+		printk("\t %x \t", *(((unsigned char *)buf_hdlc)+i));
 		if (*(((unsigned char *)buf_hdlc)+i) != 0x7e)
 			length++;
 	}
+	print("\n");
 #endif
 
 	/* This is to check if after HDLC encoding, we are still within the
@@ -805,10 +813,12 @@ static int diagchar_write( const char *buf, size_t count)
 		driver->usb_write_ptr_svc = (struct diag_request *)
 			(diagmem_alloc(driver, sizeof(struct diag_request),
 				POOL_TYPE_USB_STRUCT));
+		
 		if (driver->usb_write_ptr_svc == NULL) {
 			ret = -EIO;
 			goto fail_free_usb_struct;
 		}
+		
 		driver->usb_write_ptr_svc->buf = buf_hdlc;
 		driver->usb_write_ptr_svc->length = driver->used;
 		err = diag_write(driver->usb_write_ptr_svc);
@@ -821,12 +831,12 @@ static int diagchar_write( const char *buf, size_t count)
 		}
 		buf_hdlc = NULL;
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_INFO "\nLG_FW : size written is %d \n", driver->used);
+		printk("LG DIAG: size written is %d \n", driver->used);
 #endif
 		driver->used = 0;
 		buf_hdlc = diagmem_alloc(driver, HDLC_OUT_BUF_SIZE,
 							 POOL_TYPE_HDLC);
-		if (!buf_hdlc) {
+		if (NULL == buf_hdlc) {
 			ret = -ENOMEM;
 			goto fail_free_hdlc;
 		}
@@ -835,14 +845,15 @@ static int diagchar_write( const char *buf, size_t count)
 							 payload_size + 7);
 		diag_hdlc_encode(&send, &enc);
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_INFO "\n LG_FW : 3 Already used bytes in buffer %d, and"
+		printk("LG DIAG: 3 Already used bytes in buffer %d, and"
 		" incoming payload size is %d \n", driver->used, payload_size);
-		printk(KERN_DEBUG "LG_FW : hdlc encoded data is --> \n");
+		printk("LG DIAG: hdlc encoded data is --> \n");
 		for (i = 0; i < payload_size + 8; i++) {
-			printk(KERN_DEBUG "\t %x \t", *(((unsigned char *)buf_hdlc)+i));
+			printk("\t %x \t", *(((unsigned char *)buf_hdlc)+i));
 			if (*(((unsigned char *)buf_hdlc)+i) != 0x7e)
 				length++;
 		}
+		printk("\n");
 #endif
 	}
 
@@ -851,10 +862,12 @@ static int diagchar_write( const char *buf, size_t count)
 		driver->usb_write_ptr_svc = (struct diag_request *)
 			(diagmem_alloc(driver, sizeof(struct diag_request),
 				 POOL_TYPE_USB_STRUCT));
-		if (driver->usb_write_ptr_svc == NULL) {
+		
+		if (NULL == driver->usb_write_ptr_svc) {
 			ret = -EIO;
 			goto fail_free_usb_struct;
 		}
+		
 		driver->usb_write_ptr_svc->buf = buf_hdlc;
 		driver->usb_write_ptr_svc->length = driver->used;
 		err = diag_write(driver->usb_write_ptr_svc);
@@ -867,7 +880,7 @@ static int diagchar_write( const char *buf, size_t count)
 		}
 		buf_hdlc = NULL;
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_INFO "\nLG_FW : size written is %d \n", driver->used);
+		printk("LG DIAG: size written is %d \n", driver->used);
 #endif
 		driver->used = 0;
 	}
@@ -876,8 +889,10 @@ static int diagchar_write( const char *buf, size_t count)
 	diagmem_free(driver, buf_copy, POOL_TYPE_COPY);
 	return 0;
 
+	
 fail_free_usb_struct:
 	diagmem_free(driver, buf_hdlc, POOL_TYPE_HDLC);
+	
 fail_free_hdlc:
 	diagmem_free(driver, buf_copy, POOL_TYPE_COPY);
 	mutex_unlock(&driver->diagchar_mutex);
@@ -898,181 +913,194 @@ static void diagpkt_user_tbl_init (void)
 	}
 }
 
-void 	diagpkt_tbl_reg (const diagpkt_user_table_type * tbl_ptr)
+void diagpkt_tbl_reg (const diagpkt_user_table_type * tbl_ptr)
 {
 	int i = 0;
-	//int mem_alloc_count = 0;
 	word num_entries = tbl_ptr->count;
-	bindpkt_params *bind_req = (bindpkt_params*)kmalloc(sizeof(bindpkt_params) * num_entries, GFP_KERNEL);
+	bindpkt_params *bind_req = NULL;
 	bindpkt_params_per_process bind_req_send;
 
-	if(NULL != bind_req) {
+	bind_req = (bindpkt_params*)kmalloc(sizeof(bindpkt_params) * num_entries, 
+			GFP_KERNEL);
+	if (NULL == bind_req) {
+		printk(KERN_ERR "LG DIAG: %s(): failed the memroy allocation\n",
+				__func__);
+		return;
+	}
+
 	/* Make sure this is initialized */
-		 diagpkt_user_tbl_init ();
+	diagpkt_user_tbl_init ();
 
-		 for (i = 0; i < DIAGPKT_USER_TBL_SIZE; i++) {
-			 if (lg_diagpkt_user_table[i] == NULL) {
-				 lg_diagpkt_user_table[i] = (diagpkt_user_table_type *)
+	for (i = 0; i < DIAGPKT_USER_TBL_SIZE; i++) {
+		if (lg_diagpkt_user_table[i] == NULL) {
+			lg_diagpkt_user_table[i] = (diagpkt_user_table_type *)
 				kmalloc(sizeof(diagpkt_user_table_type), GFP_KERNEL);
-				if (NULL == lg_diagpkt_user_table[i]) {
-					printk(KERN_ERR "LG_FW : diagpkt_tbl_reg: malloc failed.");
-					kfree (bind_req);
-					return;
-				}
-				 memcpy(lg_diagpkt_user_table[i], tbl_ptr, sizeof(diagpkt_user_table_type));
-				 break;
-			 }
-		 }
-		 bind_req_send.count = num_entries;
-	   //sprintk(bind_req_send.sync_obj_name, "%s%d", DIAG_LSM_PKT_EVENT_PREFIX, gdwClientID);
+			if (NULL == lg_diagpkt_user_table[i]) {
+				printk(KERN_ERR "LG DIAG: diagpkt_tbl_reg: malloc failed.");
+				kfree (bind_req);
+				return;
+			}
+			memcpy(lg_diagpkt_user_table[i], tbl_ptr, sizeof(diagpkt_user_table_type));
+			break;
+		}
+	}
+	bind_req_send.count = num_entries;
 
-		for (i = 0; i < num_entries; i++) {
-		  bind_req[i].cmd_code = tbl_ptr->cmd_code;
-		  bind_req[i].subsys_id = tbl_ptr->subsysid;
-		  bind_req[i].cmd_code_lo = tbl_ptr->user_table[i].cmd_code_lo;
-		  bind_req[i].cmd_code_hi = tbl_ptr->user_table[i].cmd_code_hi;
-		  bind_req[i].proc_id = tbl_ptr->proc_id;
-		  bind_req[i].event_id = 0;
-		  bind_req[i].log_code = 0;
-		  //bind_req[i].client_id = gdwClientID;
+	for (i = 0; i < num_entries; i++) {
+		bind_req[i].cmd_code = tbl_ptr->cmd_code;
+		bind_req[i].subsys_id = tbl_ptr->subsysid;
+		bind_req[i].cmd_code_lo = tbl_ptr->user_table[i].cmd_code_lo;
+		bind_req[i].cmd_code_hi = tbl_ptr->user_table[i].cmd_code_hi;
+		bind_req[i].proc_id = tbl_ptr->proc_id;
+		bind_req[i].event_id = 0;
+		bind_req[i].log_code = 0;
+		//bind_req[i].client_id = gdwClientID;
 #ifdef LG_DIAG_DEBUG
-		  printk(KERN_ERR "\n LG_FW : params are %d \t%d \t%d \t%d \t%d \t \n", bind_req[i].cmd_code, bind_req[i].subsys_id, 
-		        bind_req[i].cmd_code_lo, bind_req[i].cmd_code_hi, bind_req[i].proc_id	);
+		printk("LG DIAG: params are %d \t%d \t%d \t%d \t%d \t \n", bind_req[i].cmd_code, bind_req[i].subsys_id, 
+		bind_req[i].cmd_code_lo, bind_req[i].cmd_code_hi, bind_req[i].proc_id	);
 #endif
-		}
-		bind_req_send.params = bind_req;
+	}
+	bind_req_send.params = bind_req;
 
-		if(__diagchar_ioctl(DIAG_IOCTL_COMMAND_REG, (unsigned long)&bind_req_send, 0)) {
-			printk(KERN_ERR "LG_FW :  diagpkt_tbl_reg: DeviceIOControl failed. \n");
-		}
-		kfree (bind_req);
-	} /* if(NULL != bind_req) */	
+	
+	if(__diagchar_ioctl(DIAG_IOCTL_COMMAND_REG, (unsigned long)&bind_req_send, 0)) {
+		printk(KERN_ERR "LG DIAG:  diagpkt_tbl_reg: DeviceIOControl failed. \n");
+	}
+	kfree (bind_req);
 }
 
 #define DIAGPKT_RSP_MAX (4096) // 4096 * 16
 
 void diagpkt_commit (PACK(void *)pkt)
 {
+	unsigned int length = 0;
+	unsigned char *temp = NULL;
+	int type = DIAG_DATA_TYPE_RESPONSE;
+	unsigned int send_index = 0;
+	static unsigned int rsp_len = 0;
+	diagpkt_lsm_rsp_type *item = NULL;
 #ifdef LG_DIAG_DEBUG
 	int i;
 #endif
-	if (pkt) {
-		unsigned int length = 0;
-		unsigned char *temp = NULL;
-		int type = DIAG_DATA_TYPE_RESPONSE;
-		unsigned int send_index = 0;
-		static unsigned int rsp_len = 0;
+	if (NULL == pkt)
+		return;
 
-		diagpkt_lsm_rsp_type *item = DIAGPKT_PKT2LSMITEM (pkt);
-		item->rsp_func = NULL;
-		item->rsp_func_param = NULL;
-		/* end mobile-view */
+	item = DIAGPKT_PKT2LSMITEM (pkt);
+
+	if (item->rsp.length <= 0)
+		diagpkt_free(pkt);
+
+	item->rsp_func = NULL;
+	item->rsp_func_param = NULL;
+	/* end mobile-view */
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_ERR "\n LG_FW : printing buffer at top \n");
-		for(i=0;i<item->rsp.length;i++)
-			printk(KERN_ERR "0x%x ", ((unsigned char*)(pkt))[i]);      
+	printk("LG DIAG: printing buffer at top \n");
+	for(i=0; i < item->rsp.length; i++)
+		printk("0x%x ", ((unsigned char*)(pkt))[i]);      
+	printk("\n");
 #endif
-		length = DIAG_REST_OF_DATA_POS + 
-			FPOS(diagpkt_lsm_rsp_type, rsp.pkt) + 
-			item->rsp.length + sizeof(uint16);
+	length = DIAG_REST_OF_DATA_POS + 
+		FPOS(diagpkt_lsm_rsp_type, rsp.pkt) + 
+		item->rsp.length + sizeof(uint16);
 
-		if (item->rsp.length > 0) {
-			rsp_len = item->rsp.length;
+	rsp_len = item->rsp.length;
 
-			while(rsp_len > 0) {
-				if(rsp_len > DIAGPKT_RSP_MAX) {
-					// allocate if not allocated
-					if (NULL == temp) {
-						temp = (unsigned char*) kmalloc(
-							(int)DIAG_REST_OF_DATA_POS + 
-							DIAGPKT_RSP_MAX, GFP_KERNEL);
-					}
-					// null check
-					if (NULL == temp) {
-						printk(KERN_ERR "%s(): failed to "
-								"allocate memory\n",
-								__func__);
-						return;
-					}
+	while(rsp_len > 0) {
+		if(rsp_len > DIAGPKT_RSP_MAX) {
+			
+			if (NULL == temp) {
+				temp = (unsigned char*) kmalloc(
+					(int)DIAG_REST_OF_DATA_POS + 
+					DIAGPKT_RSP_MAX, GFP_KERNEL);
+			}
+			
+			if (NULL == temp) {
+				printk(KERN_ERR "LG DIAG: %s(): failed to "
+						"allocate memory\n",
+						__func__);
 
-					memcpy(temp, (unsigned char*)&type, DIAG_REST_OF_DATA_POS);
-					memcpy(temp+4, pkt+send_index*DIAGPKT_RSP_MAX, DIAGPKT_RSP_MAX);
+				diagpkt_free(pkt);
+				return;
+			}
 
-#if 1
-					printk(KERN_ERR "\n LG_FW : printing buffer %d, "
-							"index %d \n",
-							(int)(DIAGPKT_RSP_MAX + 
-								DIAG_REST_OF_DATA_POS), 
-							send_index);
-
-					printk(KERN_ERR "\n");
-					/*TODO: Check the Numberofbyteswritten 
-					 * against number of bytes we wanted to write?*/
-#endif
-					if (diagchar_write((const void*) temp, 
-							DIAGPKT_RSP_MAX + 
-							DIAG_REST_OF_DATA_POS)) {
-						printk(KERN_ERR "\n LG_FW : Diag_LSM_Pkt: "
-							"WriteFile Failed in "
-							"diagpkt_commit \n");
-						gPkt_commit_fail++;
-					}
-					send_index++;
-					rsp_len -= DIAGPKT_RSP_MAX;
-					kfree(temp);
-					// set the temp as null
-					temp = NULL;
-					msleep(100);
-
-				}
-				 else {
-					// allocate if not allocated
-					if (NULL == temp) {
-						temp = (unsigned char*) kmalloc(
-							(int)DIAG_REST_OF_DATA_POS + 
-							(int)(rsp_len), GFP_KERNEL);
-					}
-					// null check
-					if (NULL == temp) {
-						printk(KERN_ERR "%s(): failed to "
-								"allocate memory\n",
-								__func__);
-						return;
-					}
-
-					memcpy(temp, (unsigned char*)&type, 
-							DIAG_REST_OF_DATA_POS);
-					memcpy(temp+4, pkt+send_index*DIAGPKT_RSP_MAX, 
-							rsp_len);
+			memcpy(temp, (unsigned char*)&type, DIAG_REST_OF_DATA_POS);
+			memcpy(temp+4, pkt+send_index*DIAGPKT_RSP_MAX, DIAGPKT_RSP_MAX);
 
 #if 1//def LG_DIAG_DEBUG
-					printk(KERN_ERR "\n LG_FW : printing buffer %d, "
-							"index %d \n",
-							(int)(rsp_len + 
-								DIAG_REST_OF_DATA_POS), 
-							send_index);
+			printk(KERN_ERR "\n LG DIAG: printing buffer %d, "
+					"index %d \n",
+					(int)(DIAGPKT_RSP_MAX + 
+						DIAG_REST_OF_DATA_POS), 
+					send_index);
 
-	  
-					printk(KERN_ERR "\n");
+			printk(KERN_ERR "\n");
+			/*TODO: Check the Numberofbyteswritten 
+			 * against number of bytes we wanted to write?*/
 #endif
-					/*TODO: Check the Numberofbyteswritten 
-					 * against number of bytes we wanted to write?*/
-					if (diagchar_write((const void*) temp, 
-							rsp_len + DIAG_REST_OF_DATA_POS)) {
-						printk(KERN_ERR "\n LG_FW : Diag_LSM_Pkt: "
-							"WriteFile Failed in "
-							"diagpkt_commit \n");
-						gPkt_commit_fail++;
-					}
-					rsp_len = 0;
-				}
+			if (diagchar_write((const void*) temp, 
+					DIAGPKT_RSP_MAX + 
+					DIAG_REST_OF_DATA_POS)) {
+				printk(KERN_ERR "\n LG DIAG: Diag_LSM_Pkt: "
+					"WriteFile Failed in "
+					"diagpkt_commit \n");
+				gPkt_commit_fail++;
 			}
-		}
+			send_index++;
+			rsp_len -= DIAGPKT_RSP_MAX;
+			kfree(temp);
+			
+			temp = NULL;
+			msleep(100);
 
+		}
+		else {
+			
+			if (NULL == temp) {
+				temp = (unsigned char*) kmalloc(
+					(int)DIAG_REST_OF_DATA_POS + 
+					(int)(rsp_len), GFP_KERNEL);
+			}
+			
+			if (NULL == temp) {
+				printk(KERN_ERR "LG DIAG: %s(): failed to "
+						"allocate memory\n",
+						__func__);
+
+				diagpkt_free(pkt);
+				return;
+			}
+
+			memcpy(temp, (unsigned char*)&type, 
+					DIAG_REST_OF_DATA_POS);
+			memcpy(temp+4, pkt+send_index*DIAGPKT_RSP_MAX, 
+					rsp_len);
+
+#if 1//def LG_DIAG_DEBUG
+			printk("LG DIAG: printing buffer %d, "
+					"index %d \n",
+					(int)(rsp_len + 
+						DIAG_REST_OF_DATA_POS), 
+					send_index);
+
+
+			printk("\n");
+#endif
+			/*TODO: Check the Numberofbyteswritten 
+			 * against number of bytes we wanted to write?*/
+			if (diagchar_write((const void*) temp, 
+					rsp_len + DIAG_REST_OF_DATA_POS)) {
+				printk(KERN_ERR "\n LG DIAG: Diag_LSM_Pkt: "
+					"WriteFile Failed in "
+					"diagpkt_commit \n");
+				gPkt_commit_fail++;
+			}
+			rsp_len = 0;
+		}
+	}
+
+	if (temp)
 		kfree(temp);
-		diagpkt_free(pkt);
-	} /* end if (pkt)*/
-	return;
+	diagpkt_free(pkt);
 } /* diagpkt_commit */
 
 diagpkt_cmd_code_type diagpkt_get_cmd_code (PACK(void *)ptr)
@@ -1132,11 +1160,11 @@ void diagpkt_process_request (void *req_pkt, uint16 pkt_len,
 	boolean found = FALSE;
 	uint16 cmd_code = 0xFF;
 #ifdef LG_DIAG_DEBUG
-	printk(KERN_ERR "\n LG_FW : print received packet \n");
+	printk("LG DIAG: print received packet \n");
 	for (i=0;i<pkt_len;i++) {
-		printk(KERN_ERR "0x%x ",*((unsigned char*)(req_pkt + i)));
+		printk("0x%x ",*((unsigned char*)(req_pkt + i)));
 	}
-	printk(KERN_ERR "\n");
+	printk("\n");
 #endif
 	packet_id = diagpkt_get_cmd_code (req_pkt);
 
@@ -1165,45 +1193,40 @@ void diagpkt_process_request (void *req_pkt, uint16 pkt_len,
 			tbl_entry_count = (tbl_entry) ? user_tbl_entry->count : 0;
 
 			for (j = 0; (tbl_entry!=NULL) && !found && j < tbl_entry_count; j++) {
-				if (packet_id >= tbl_entry->cmd_code_lo && 
-					packet_id <= tbl_entry->cmd_code_hi) {
+				/* If the entry has no func, ignore it. */
+				if (packet_id < tbl_entry->cmd_code_lo ||
+				    packet_id > tbl_entry->cmd_code_hi ||
+				    NULL == tbl_entry->func_ptr) {
+					tbl_entry++;
+					continue;
+				}
 
-					/* If the entry has no func, ignore it. */
-					if (tbl_entry->func_ptr) {
-						found = TRUE;
+				found = TRUE;
 
-						rsp_pkt = (void *) (*tbl_entry->func_ptr) (req_pkt, pkt_len);
-						if (rsp_pkt) {
+				rsp_pkt = (void *) (*tbl_entry->func_ptr) (req_pkt, pkt_len);
+				if (rsp_pkt) {
 #ifdef LG_DIAG_DEBUG
-							printk(KERN_ERR " LG_FW : diagpkt_process_request: about to call diagpkt_commit.\n");
+					printk("LG DIAG: diagpkt_process_request: about to call diagpkt_commit.\n");
 #endif
 /* The most common case: response is returned.  Go ahead and commit it here. */
-							diagpkt_commit (rsp_pkt);
+					diagpkt_commit (rsp_pkt);
 #ifdef LG_DIAG_DEBUG
-							printk(KERN_ERR " LG_FW : diagpkt_process_request: diagpkt_commit end\n");
+					printk("LG DIAG: diagpkt_process_request: diagpkt_commit end\n");
 #endif
 
-						} /* endif if (rsp_pkt) */
-						else {
-#if 1 //LG_FW_MTC_GISELE  
-							if(g_diag_mtc_check == 0){
-								lg_diag_req_pkt_ptr = req_pkt;
-								lg_diag_req_pkt_length = pkt_len;
+				} /* endif if (rsp_pkt) */
+				else {
+					if(g_diag_mtc_check == 0){
+						lg_diag_req_pkt_ptr = req_pkt;
+						lg_diag_req_pkt_length = pkt_len;
 
-								lg_diag_app_execute();
-							} 
-							else {
-								g_diag_mtc_check = 0;
-							}
-#else
-							lg_diag_req_pkt_ptr = req_pkt;
-							lg_diag_req_pkt_length = pkt_len;
+						lg_diag_app_execute();
+					} 
+					else {
+						g_diag_mtc_check = 0;
+					}
+				} /* endif if (rsp_pkt) */
 
-							lg_diag_app_execute();
-#endif //LG_FW_MTC_GISELE 			  
-						} /* endif if (rsp_pkt) */
-					} /* endif if (tbl_entry->func_ptr) */
-				} /* endif if (packet_id >= tbl_entry->cmd_code_lo && packet_id <= tbl_entry->cmd_code_hi)*/
 				tbl_entry++;
 			} /* for (j = 0; (tbl_entry!=NULL) && !found && j < tbl_entry_count; j++) */
 		} /* endif if (user_tbl_entry != NULL && user_tbl_entry->subsysid == subsys_id && user_tbl_entry->cmd_code == cmd_code)*/
@@ -1213,7 +1236,7 @@ void diagpkt_process_request (void *req_pkt, uint16 pkt_len,
 
 	if (!found)
 	{
-		printk(KERN_ERR "LG_FW : diagpkt_process_request: "
+		printk(KERN_ERR "LG DIAG: diagpkt_process_request: "
 				"Did not find match in user table \n");
 	}
 	return;
@@ -1232,7 +1255,7 @@ static int CreateWaitThread(void* param)
 {
 	if(diagchar_open() != 0) {
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_INFO "\n LG_FW :	size written is %d \n", driver->used);
+		printk("LG DIAG: size written is %d \n", driver->used);
 #endif
 		kthread_stop(lg_diag_thread);
 		return 0; 	 
@@ -1243,7 +1266,7 @@ static int CreateWaitThread(void* param)
 	do {
 		num_bytes_read = diagchar_read(read_buffer, READ_BUF_SIZE);
 #ifdef LG_DIAG_DEBUG
-		printk(KERN_DEBUG "LG_FW : CreateWaitThread, diagchar_read %d byte",num_bytes_read);
+		printk("LG DIAG: CreateWaitThread, diagchar_read %d byte",num_bytes_read);
 #endif
 		if(*(int *)read_buffer == DEINIT_TYPE)
 			break;
@@ -1260,7 +1283,7 @@ void lgfw_diag_kernel_service_init(int driver_ptr)
 	lg_diag_thread = kthread_run(CreateWaitThread, NULL, "kthread_lg_diag");
 	if (IS_ERR(lg_diag_thread)) {
 		lg_diag_thread = NULL;
-		printk(KERN_ERR "LG_FW : %s: ts kthread run was failed!\n", 
+		printk(KERN_ERR "LG DIAG: %s: ts kthread run was failed!\n", 
 				__FUNCTION__);
 		return;
 	}

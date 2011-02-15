@@ -129,6 +129,7 @@ int camera_power_on (void)
 		printk(KERN_ERR "%s: ldo %d control error\n", __func__, LDO_CAM_IOVDD_NO);
 		return rc;
 	}
+	
 	if(lge_bd_rev >= 10){ /* >= Rev 1.2 */
 		rc = aat28xx_ldo_set_level(dev, LDO_CAM_AVDD_NO, 2900);
 	}

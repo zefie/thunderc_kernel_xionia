@@ -37,8 +37,14 @@
 #include <linux/earlysuspend.h>
 #endif
 
+
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 #define THUNDER_SPRINT_NO_ALC
+#endif
+
+#if defined(CONFIG_FB_MSM_MDDI_NOVATEK_HITACHI_HVGA)
+extern void lge_probe_lcd(void);
+extern int g_mddi_lcd_probe;
 #endif
 
 /********************************************
@@ -50,6 +56,7 @@
 /* 9.00, 9.90, 10.8, 11.7, 12.6, 13.5, 14.4, 15.3, 16.2, 17.1, */
 /* 18.0, 18.9, 19.8, 20.7, 21.6, 22.5, 23.4, 24.3, 25.2, 26.1, */
 /* 27.0, 27.9 */
+
 
 
 //#define LCD_LED_MAX 21 /* 20.32mA */
@@ -402,6 +409,7 @@ int aat28xx_ldo_enable(struct device *dev, unsigned num, unsigned enable)
 		if ((adap=dev_get_drvdata(dev)) && (client=i2c_get_adapdata(adap))) {
 			drvdata = i2c_get_clientdata(client);
 			if (enable) {
+				
 				if (drvdata->ldo_ref[num-1] == 0) {
 					dprintk("ref count = 0, call aat28xx_set_ldos\n");
 					err = aat28xx_set_ldos(client, num, enable);
@@ -413,6 +421,7 @@ int aat28xx_ldo_enable(struct device *dev, unsigned num, unsigned enable)
 				if (--drvdata->ldo_ref[num-1] == 0) {
 					dprintk("ref count = 0, call aat28xx_set_ldos\n");
 					err = aat28xx_set_ldos(client, num, enable);
+					
 					if (err)
 						drvdata->ldo_ref[num-1]++;
 				}
@@ -497,6 +506,7 @@ static void aat28xx_go_opmode(struct aat28xx_driver_data *drvdata)
 			drvdata->state = NORMAL_STATE;
 			break;
 		case ALC_MODE:
+			
 		default:
 			eprintk("Invalid Mode\n");
 			break;
@@ -532,6 +542,7 @@ static void aat28xx_poweron(struct aat28xx_driver_data *drvdata)
 	}
 }
 
+#if 0
 static void aat28xx_poweroff(struct aat28xx_driver_data *drvdata)
 {
 	if (!drvdata || drvdata->state == POWEROFF_STATE)
@@ -551,10 +562,15 @@ static void aat28xx_poweroff(struct aat28xx_driver_data *drvdata)
 	mdelay(6);
 	drvdata->state = POWEROFF_STATE;
 }
+#endif
 
 /* This function provide sleep enter routine for power management. */
 static void aat28xx_sleep(struct aat28xx_driver_data *drvdata)
 {
+#if defined(CONFIG_MACH_MSM7X27_THUNDERC)
+	int cam_status;
+#endif
+
 	if (!drvdata || drvdata->state == SLEEP_STATE)
 		return;
 
@@ -567,22 +583,19 @@ static void aat28xx_sleep(struct aat28xx_driver_data *drvdata)
 			break;
 
 		case ALC_MODE:
-			//drvdata->state = SLEEP_STATE;
-			//aat28xx_set_table(drvdata, drvdata->cmds.sleep);
-			//udelay(500);
-			//break;
+			
 
 		default:
 			eprintk("Invalid Mode\n");
 			break;
 	}
-	#if defined(CONFIG_MACH_MSM7X27_THUNDERC)
-		int cam_status;
-		cam_status = camera_status();
-		if (cam_status == CAMERA_POWER_OFF){
-			//aat28xx_poweroff(drvdata); 
-		}
-	#endif
+
+#if defined(CONFIG_MACH_MSM7X27_THUNDERC)
+	cam_status = camera_status();
+	if (cam_status == CAMERA_POWER_OFF){
+		
+	}
+#endif
 	
 }
 
@@ -600,6 +613,7 @@ static void aat28xx_wakeup(struct aat28xx_driver_data *drvdata)
 		aat28xx_go_opmode(drvdata);
 		if (drvdata->mode == NORMAL_MODE) {
 			if(drvdata->version == 2862) {
+				
 				aat28xx_write(drvdata->client, drvdata->reg_addrs.fade, 0x00);	/* Floor current : 0.48mA */
 				aat28xx_intensity = (~(drvdata->intensity)& 0x1F);	/* Invert BL control bits and Clear upper 3bits */
 				aat28xx_intensity |= 0xA0;							/* MEQS(7)=1, Disable Fade(6)=0, LCD_ON(5)=1*/
@@ -614,6 +628,7 @@ static void aat28xx_wakeup(struct aat28xx_driver_data *drvdata)
 	} else if (drvdata->state == SLEEP_STATE) {
 		if (drvdata->mode == NORMAL_MODE) {
 			if(drvdata->version == 2862) {
+				
 				aat28xx_write(drvdata->client, drvdata->reg_addrs.fade, 0x00);	/* Floor current : 0.48mA */
 				aat28xx_intensity = (~(drvdata->intensity)& 0x1F);	/* Invert BL control bits and Clear upper 3bits */
 				aat28xx_intensity |= 0xA0;							/* MEQS(7)=1, Disable Fade(6)=0, LCD_ON(5)=1*/
@@ -625,6 +640,7 @@ static void aat28xx_wakeup(struct aat28xx_driver_data *drvdata)
 			}
 			drvdata->state = NORMAL_STATE;
 		} else if (drvdata->mode == ALC_MODE) {
+			
 		}
 	}
 }
@@ -642,6 +658,7 @@ static int aat28xx_send_intensity(struct aat28xx_driver_data *drvdata, int next)
 
 		if (drvdata->state == NORMAL_STATE && drvdata->intensity != next)
 		{
+			
 			if(drvdata->version == 2862)
 			{
 				if(next != 0)
@@ -728,7 +745,7 @@ void aat28xx_switch_mode(struct device *dev, int next_mode)
 		return;
 
 	if (next_mode == ALC_MODE) {
-		//aat28xx_set_table(drvdata, drvdata->cmds.alc);
+		
 	}
 	else if (next_mode == NORMAL_MODE) {
 		aat28xx_set_table(drvdata, drvdata->cmds.alc);
@@ -766,6 +783,7 @@ ssize_t aat28xx_store_alc(struct device *dev, struct device_attribute *attr, con
 	int alc;
 	int next_mode;
 
+	
 #ifdef THUNDER_SPRINT_NO_ALC
 	return -EINVAL;
 #endif
@@ -820,9 +838,10 @@ ssize_t aat28xx_show_drvstat(struct device *dev, struct device_attribute *attr, 
 	return len;
 }
 
+
 ssize_t aat28xx_lcd_backlight_onoff(struct device *dev, struct device_attribute *attr, const char * buf, size_t count)
 {
-	int ret, onoff;
+	int onoff;
 	struct aat28xx_driver_data *drvdata = dev_get_drvdata(dev->parent);
 
 	sscanf(buf, "%d", &onoff);
@@ -837,7 +856,7 @@ ssize_t aat28xx_lcd_backlight_onoff(struct device *dev, struct device_attribute 
 		aat28xx_sleep(drvdata);
 	}
 
-	return ret;	
+	return count;	
 }
 
 DEVICE_ATTR(alc, 0664, aat28xx_show_alc, aat28xx_store_alc);
@@ -916,7 +935,20 @@ static int __init aat28xx_probe(struct i2c_client *i2c_dev, const struct i2c_dev
 
 	drvdata->client = i2c_dev;
 	drvdata->gpio = pdata->gpio;
+
+#if defined(CONFIG_FB_MSM_MDDI_NOVATEK_HITACHI_HVGA)
+  lge_probe_lcd();
+
+  if (g_mddi_lcd_probe == 0) { /* Hitachi LCD */
+    drvdata->max_intensity = 21;
+	}
+	else { /* Novatek LCD */
+    drvdata->max_intensity = 17;
+	}  
+#else
 	drvdata->max_intensity = LCD_LED_MAX;
+#endif
+
 	if (pdata->max_current > 0)
 		drvdata->max_intensity = pdata->max_current;
 	drvdata->intensity = LCD_LED_MIN;
@@ -958,6 +990,7 @@ static int __init aat28xx_probe(struct i2c_client *i2c_dev, const struct i2c_dev
 		err = device_create_file(drvdata->led->dev, &dev_attr_alc);
 		err = device_create_file(drvdata->led->dev, &dev_attr_reg);
 		err = device_create_file(drvdata->led->dev, &dev_attr_drvstat);
+		/* LGE_CHANGE [james.jang@lge.com] 2010-06-22, backlight on/off */
 		err = device_create_file(drvdata->led->dev, &dev_attr_bl_onoff);
 	}
 #endif

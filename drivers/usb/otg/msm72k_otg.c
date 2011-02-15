@@ -174,13 +174,31 @@ static int msm_otg_set_clk(struct otg_transceiver *xceiv, int on)
 }
 static void msm_otg_start_peripheral(struct otg_transceiver *xceiv, int on)
 {
+	struct msm_otg *dev = container_of(xceiv, struct msm_otg, otg);
+
 	if (!xceiv->gadget)
 		return;
 
-	if (on)
+	if (on) {
+		/* increment the clk reference count so that
+		 * it would be still on when disabled from
+		 * low power mode routine
+		 */
+		if (dev->pdata->pclk_required_during_lpm)
+			clk_enable(dev->hs_pclk);
+
 		usb_gadget_vbus_connect(xceiv->gadget);
-	else
+	} else {
+		atomic_set(&dev->chg_type, USB_CHG_TYPE__INVALID);
 		usb_gadget_vbus_disconnect(xceiv->gadget);
+
+		/* decrement the clk reference count so that
+		 * it would be off when disabled from
+		 * low power mode routine
+		 */
+		if (dev->pdata->pclk_required_during_lpm)
+			clk_disable(dev->hs_pclk);
+	}
 }
 
 static void msm_otg_start_host(struct otg_transceiver *xceiv, int on)
@@ -189,6 +207,17 @@ static void msm_otg_start_host(struct otg_transceiver *xceiv, int on)
 
 	if (!xceiv->host)
 		return;
+
+	/* increment or decrement the clk reference count
+	 * to avoid usb h/w lockup issues when low power
+	 * mode is initiated and vbus is on.
+	 */
+	if (dev->pdata->pclk_required_during_lpm) {
+		if (on)
+			clk_enable(dev->hs_pclk);
+		else
+			clk_disable(dev->hs_pclk);
+	}
 
 	if (dev->start_host)
 		dev->start_host(xceiv->host, on);
@@ -199,14 +228,11 @@ static int msm_otg_suspend(struct msm_otg *dev)
 	unsigned long timeout;
 	int vbus = 0;
 	unsigned otgsc;
+	enum chg_type curr_chg = atomic_read(&dev->chg_type);
 
 	disable_irq(dev->irq);
 	if (atomic_read(&dev->in_lpm))
 		goto out;
-
-	/* Don't reset if mini-A cable is connected */
-	if (!is_host())
-		otg_reset(&dev->otg);
 
 	/* In case of fast plug-in and plug-out inside the otg_reset() the
 	 * servicing of BSV is missed (in the window of after phy and link
@@ -214,6 +240,7 @@ static int msm_otg_suspend(struct msm_otg *dev)
 	 * Ignore BSV, as it may remain set while using debugfs to change modes
 	 */
 	if (is_b_sess_vld() && !is_host() &&
+				curr_chg != USB_CHG_TYPE__WALLCHARGER &&
 				(dev->pdata->otg_mode == OTG_ID)) {
 		otgsc = readl(USB_OTGSC);
 		writel(otgsc, USB_OTGSC);

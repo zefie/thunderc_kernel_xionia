@@ -1,4 +1,4 @@
-/* arch/arm/mach-msm/lge/LG_rapi_client.c
+/* arch/arm/mach-msm/lge/lg_rapi_client.c
  *
  * Copyright (C) 2009 LGE, Inc.
  * Created by khlee@lge.com  
@@ -20,10 +20,15 @@
 #if defined(CONFIG_MACH_MSM7X27_ALOHAV)
 #include <mach/msm_battery_alohav.h>
 #elif defined(CONFIG_MACH_MSM7X27_THUNDERC)
+/* LGE_CHANGE
+ * ADD THUNERC feature to use VS740 BATT DRIVER
+ * 2010-5-13, taehung.kim@lge.com
+ */
 #include <mach/msm_battery_thunderc.h>
 #else
 #include <mach/msm_battery.h>
 #endif
+// LGE_CHANGE [dojip.kim@lge.com] 2010-07-09, pcb version check
 #include <mach/board_lge.h>
 #include <mach/lg_pcb_version.h>
 
@@ -54,6 +59,7 @@
 static uint32_t open_count;
 struct msm_rpc_client *client;
 
+// LGE_CHANGE [dojip.kim@lge.com] 2010-08-12, initial value 
 static int old_cable_type = -1;
 
 int LG_rapi_init(void)
@@ -81,59 +87,66 @@ int msm_chg_LG_cable_type(void)
 	struct oem_rapi_client_streaming_func_arg arg;
 	struct oem_rapi_client_streaming_func_ret ret;
 	char output[LG_RAPI_CLIENT_MAX_OUT_BUFF_SIZE];
-	uint32_t out_len;
 	int retValue = 0;
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-09-12, 
+	 * add error control code, try 2 times if error occurs
+	 * (from VS660)
+	 */
+	int rc = -1;
+	int errCount = 0;
 
 	Open_check();
 
-	arg.event = LG_FW_RAPI_CLIENT_EVENT_GET_LINE_TYPE;
-	arg.cb_func = NULL;
-	arg.handle = (void *)0;
-	arg.in_len = 0;
-	arg.input = NULL;
-	arg.out_len_valid = 1;
-	arg.output_valid = 1;
-	arg.output_size = 4;
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-09-12, 
+	 * add error control code, try 2 times if error occurs
+	 * (from VS660)
+	 */
+	do {
+		arg.event = LG_FW_RAPI_CLIENT_EVENT_GET_LINE_TYPE;
+		arg.cb_func = NULL;
+		arg.handle = (void *)0;
+		arg.in_len = 0;
+		arg.input = NULL;
+		arg.out_len_valid = 1;
+		arg.output_valid = 1;
+		arg.output_size = 4;
 
-	ret.output = NULL;
-	ret.out_len = NULL;
+		ret.output = NULL;
+		ret.out_len = NULL;
 
-#if defined(CONFIG_MACH_MSM7X27_THUNDERC)
-	if (oem_rapi_client_streaming_function(client, &arg, &ret) < 0) {	// error case
-		retValue = old_cable_type;
-	} else {
-		memcpy(output, ret.output, *ret.out_len);
-		retValue = GET_INT32(output);
-
-		if (retValue == 0) // no init cable 
+		rc = oem_rapi_client_streaming_function(client, &arg, &ret);
+		if (rc < 0) {
 			retValue = old_cable_type;
-		else //read ok.
-			old_cable_type = retValue;
-	}
+		} 
+		else {
+			/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-21, memcpy */
+			memcpy(output, ret.output, *ret.out_len);
+			retValue = GET_INT32(output);
 
-	if (ret.output)
-		kfree(ret.output);
-	if (ret.out_len)
-		kfree(ret.out_len);
+			if (retValue == 0) // no init cable 
+				retValue = old_cable_type;
+			else //read ok.
+				old_cable_type = retValue;
+		}
 
+		/* LGE_CHANGE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
+		if (ret.output)
+			kfree(ret.output);
+		if (ret.out_len)
+			kfree(ret.out_len);
+
+	} while (rc < 0 && errCount++ < 3);
+
+	// LGE_CHANGE [dojip.kim@lge.com] 2010-07-09, 
+	// workaround for wrong detection cable type in Rev.A
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 	if (lge_bd_rev < HW_PCB_REV_B && retValue == 10) // LT_130K
 		retValue = 0;
 #endif
 
+	// LGE_CHANGE [dojip.kim@lge.com] 2010-07-09, debugging message */
 	printk("USB Cable type: %s(): %d\n", __func__, retValue);
 	return retValue;
-#else
-	oem_rapi_client_streaming_function(client, &arg, &ret);
-	memcpy(output, ret.output, *ret.out_len);
-
-	if (ret.output)
-		kfree(ret.output);
-	if (ret.out_len)
-		kfree(ret.out_len);
-
-	return GET_INT32(output);
-#endif
 }
 
 void send_to_arm9(void *pReq, void *pRsp)
@@ -164,12 +177,14 @@ void send_to_arm9(void *pReq, void *pRsp)
 
 	oem_rapi_client_streaming_function(client, &arg, &ret);
 	memcpy(pRsp, ret.output, *ret.out_len);
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 }
 
+/* LGE_CHANGE_S [sm.shim@lge.com] 2010-08-13, Testmode merge from VS660 */
 void set_operation_mode(boolean info)
 {
 	struct oem_rapi_client_streaming_func_arg arg;
@@ -191,19 +206,20 @@ void set_operation_mode(boolean info)
 
 	oem_rapi_client_streaming_function(client, &arg, &ret);
 
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-08-14, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 }
 EXPORT_SYMBOL(set_operation_mode);
+/* LGE_CHANGE_E [sm.shim@lge.com] 2010-08-13, Testmode merge from VS660 */
 
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC
 void battery_info_get(struct batt_info *resp_buf)
 {
 	struct oem_rapi_client_streaming_func_arg arg;
 	struct oem_rapi_client_streaming_func_ret ret;
-	uint32_t out_len;
 	int ret_val;
 	struct batt_info rsp_buf;
 
@@ -223,31 +239,41 @@ void battery_info_get(struct batt_info *resp_buf)
 
 	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
 	if (ret_val == 0) {
+		/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, memcpy */
 		memcpy(&rsp_buf, ret.output, *ret.out_len);
 
 		resp_buf->valid_batt_id = GET_U_INT32(&rsp_buf.valid_batt_id);
 		resp_buf->batt_therm = GET_U_INT32(&rsp_buf.batt_therm);
 		resp_buf->batt_temp = GET_INT32(&rsp_buf.batt_temp);
+		/* LGE_CHANGE_S [dojip.kim@lge.com] 2010-05-17, [LS670],
+		 * add extra batt info
+		 */
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 		resp_buf->chg_current = GET_U_INT32(&rsp_buf.chg_current);
 		resp_buf->batt_thrm_state =
 		    GET_U_INT32(&rsp_buf.batt_thrm_state);
 #endif
+		/* LGE_CHANGE_E [dojip.kim@lge.com] 2010-05-17 */
 	} else {		/* In case error */
 		resp_buf->valid_batt_id = 1;	/* authenticated battery id */
 		resp_buf->batt_therm = 100;	/* 100 battery therm adc */
 		resp_buf->batt_temp = 30;	/* 30 degree celcius */
+		/* LGE_CHANGE_S [dojip.kim@lge.com] 2010-05-17, [LS670],
+		 * add extra batt info
+		 */
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 		resp_buf->chg_current = 0;
 		resp_buf->batt_thrm_state = 0;
 #endif
+		/* LGE_CHANGE_E [dojip.kim@lge.com] 2010-05-17 */
 	}
+
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 
 EXPORT_SYMBOL(battery_info_get);
@@ -273,15 +299,16 @@ void pseudo_batt_info_set(struct pseudo_batt_info_type *info)
 
 	oem_rapi_client_streaming_function(client, &arg, &ret);
 
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 EXPORT_SYMBOL(pseudo_batt_info_set);
 
+// LGE_CHANGE_S [dojip.kim@lge.com] 2010-08-09
 void block_charging_set(int bypass)
 {
 	struct oem_rapi_client_streaming_func_arg arg;
@@ -308,9 +335,9 @@ void block_charging_set(int bypass)
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 EXPORT_SYMBOL(block_charging_set);
+// LGE_CHANGE_E [dojip.kim@lge.com] 2010-08-09
 #endif /* CONFIG_MACH_MSM7X27_THUNDERC */
 
 void msm_get_MEID_type(char *sMeid)
@@ -336,14 +363,15 @@ void msm_get_MEID_type(char *sMeid)
 
 	memcpy(sMeid, ret.output, 14);
 
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 
+/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-21, from VS740 */
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC
 void set_charging_timer(int info)
 {
@@ -366,16 +394,13 @@ void set_charging_timer(int info)
 	ret.out_len = NULL;
 
 	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
-	//if(ret_val != 0)
-	//printk(KERN_ERR "%s: oem_rapi_client_streaming_function retured[%d]: setvalue[%d]\n",
-	//                __func__, ret_val,info);
 
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 
 EXPORT_SYMBOL(set_charging_timer);
@@ -384,7 +409,6 @@ void get_charging_timer(int *info)
 {
 	struct oem_rapi_client_streaming_func_arg arg;
 	struct oem_rapi_client_streaming_func_ret ret;
-	uint32_t out_len;
 	int ret_val;
 	int resp_buf;
 
@@ -403,34 +427,33 @@ void get_charging_timer(int *info)
 	ret.out_len = NULL;
 
 	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
-	//printk(KERN_ERR "%s: oem_rapi_client_streaming_function returned[%d] val[%d]\n",
-	//                                      __func__, ret_val, resp_buf);
 	if (ret_val == 0) {
+		/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, memcpy */
 		memcpy(&resp_buf, ret.output, *ret.out_len);
 
-		*info = resp_buf;
+		*info = GET_INT32(&resp_buf);
 	} else {
 		*info = 1;	//default value
 	}
 
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 
 EXPORT_SYMBOL(get_charging_timer);
 #endif
 
+/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-29, pcb version from LS680*/
 #ifdef  CONFIG_LGE_PCB_VERSION
 int lg_get_hw_version(void)
 {
 	struct oem_rapi_client_streaming_func_arg arg;
 	struct oem_rapi_client_streaming_func_ret ret;
 	int pcb_ver;
-	int out_len;
 
 	Open_check();
 
@@ -449,6 +472,7 @@ int lg_get_hw_version(void)
 	oem_rapi_client_streaming_function(client, &arg, &ret);
 	memcpy(&pcb_ver, ret.output, *ret.out_len);
 
+	/* LGE_CHAGNE [dojip.kim@lge.com] 2010-06-21, free the allocated mem */
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
@@ -460,6 +484,9 @@ int lg_get_hw_version(void)
 EXPORT_SYMBOL(lg_get_hw_version);
 #endif /* CONFIG_LGE_PCB_VERSION */
 
+/* LGE_CHANGE [dojip.kim@lge.com] 2010-08-09, [LS670]
+ * no stop charing even if hot or cold battery
+ */
 #ifdef CONFIG_LGE_THERM_NO_STOP_CHARGING
 void set_charging_therm_no_stop_charging(int info)
 {
@@ -482,17 +509,195 @@ void set_charging_therm_no_stop_charging(int info)
 	ret.out_len = NULL;
 
 	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
-	//if(ret_val != 0)
-	//printk(KERN_ERR "%s: oem_rapi_client_streaming_function retured[%d]: setvalue[%d]\n",
-	//                __func__, ret_val,info);
 
 	if (ret.output)
 		kfree(ret.output);
 	if (ret.out_len)
 		kfree(ret.out_len);
 
-	return;
 }
 
 EXPORT_SYMBOL(set_charging_therm_no_stop_charging);
 #endif
+
+// LGE_CHANGE [dojip.kim@lge.com] 2010-09-01
+void remote_set_charging_stat_realtime_update(int info)
+{
+	struct oem_rapi_client_streaming_func_arg arg;
+	struct oem_rapi_client_streaming_func_ret ret;
+	int ret_val;
+
+	Open_check();
+
+	arg.event = LG_FW_SET_CHARGING_STAT_REALTIME_UPDATE;
+	arg.cb_func = NULL;
+	arg.handle = (void *)0;
+	arg.in_len = sizeof(int);
+	arg.input = (char *)&info;
+	arg.out_len_valid = 0;
+	arg.output_valid = 0;
+	arg.output_size = 0;	//alloc memory for response
+
+	ret.output = NULL;
+	ret.out_len = NULL;
+
+	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
+
+	if (ret.output)
+		kfree(ret.output);
+	if (ret.out_len)
+		kfree(ret.out_len);
+
+}
+
+EXPORT_SYMBOL(remote_set_charging_stat_realtime_update);
+
+void remote_get_charging_stat_realtime_update(int *info)
+{
+	struct oem_rapi_client_streaming_func_arg arg;
+	struct oem_rapi_client_streaming_func_ret ret;
+	int ret_val;
+	int resp_buf;
+
+	Open_check();
+
+	arg.event = LG_FW_GET_CHARGING_STAT_REALTIME_UPDATE;
+	arg.cb_func = NULL;
+	arg.handle = (void *)0;
+	arg.in_len = 0;
+	arg.input = NULL;
+	arg.out_len_valid = 1;
+	arg.output_valid = 1;
+	arg.output_size = sizeof(int);
+
+	ret.output = NULL;
+	ret.out_len = NULL;
+
+	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
+	if (ret_val == 0) {
+		memcpy(&resp_buf, ret.output, *ret.out_len);
+		*info = GET_INT32(&resp_buf);
+	} else {
+		*info = 0;	//default value
+	}
+
+	if (ret.output)
+		kfree(ret.output);
+	if (ret.out_len)
+		kfree(ret.out_len);
+}
+EXPORT_SYMBOL(remote_get_charging_stat_realtime_update);
+
+// LGE_CHANGE [dojip.kim@lge.com] 2010-09-12, prl version
+void remote_get_prl_version(int *info)
+{
+	struct oem_rapi_client_streaming_func_arg arg;
+	struct oem_rapi_client_streaming_func_ret ret;
+	int ret_val;
+	int resp_buf;
+
+	Open_check();
+
+	arg.event = LG_FW_GET_PRL_VERSION;
+	arg.cb_func = NULL;
+	arg.handle = (void *)0;
+	arg.in_len = 0;
+	arg.input = NULL;
+	arg.out_len_valid = 1;
+	arg.output_valid = 1;
+	arg.output_size = sizeof(int);
+
+	ret.output = NULL;
+	ret.out_len = NULL;
+
+	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
+	if (ret_val == 0) {
+		memcpy(&resp_buf, ret.output, *ret.out_len);
+		*info = GET_INT32(&resp_buf);
+	} else {
+		*info = 0;	//default value
+	}
+
+	if (ret.output)
+		kfree(ret.output);
+	if (ret.out_len)
+		kfree(ret.out_len);
+}
+EXPORT_SYMBOL(remote_get_prl_version);
+
+// LGE_CHANGE [dojip.kim@lge.com] 2010-09-28, FTM boot
+void remote_set_ftm_boot(int info)
+{
+	struct oem_rapi_client_streaming_func_arg arg;
+	struct oem_rapi_client_streaming_func_ret ret;
+	int ret_val;
+
+	Open_check();
+
+	arg.event = LG_FW_SET_FTM_BOOT;
+	arg.cb_func = NULL;
+	arg.handle = (void *)0;
+	arg.in_len = sizeof(int);
+	arg.input = (char *)&info;
+	arg.out_len_valid = 0;
+	arg.output_valid = 0;
+	arg.output_size = 0;	//alloc memory for response
+
+	ret.output = NULL;
+	ret.out_len = NULL;
+
+	ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
+
+	if (ret.output)
+		kfree(ret.output);
+	if (ret.out_len)
+		kfree(ret.out_len);
+}
+EXPORT_SYMBOL(remote_set_ftm_boot);
+
+void remote_get_ftm_boot(int *info)
+{
+	struct oem_rapi_client_streaming_func_arg arg;
+	struct oem_rapi_client_streaming_func_ret ret;
+	int ret_val;
+	int resp_buf;
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-09-29, 
+	 * add error control code, try 2 times if error occurs
+	 */
+	int errCount = 0;
+
+	Open_check();
+
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-09-29, 
+	 * add error control code, try 2 times if error occurs
+	 */
+	do {
+		arg.event = LG_FW_GET_FTM_BOOT;
+		arg.cb_func = NULL;
+		arg.handle = (void *)0;
+		arg.in_len = 0;
+		arg.input = NULL;
+		arg.out_len_valid = 1;
+		arg.output_valid = 1;
+		arg.output_size = sizeof(int);
+
+		ret.output = NULL;
+		ret.out_len = NULL;
+
+		ret_val = oem_rapi_client_streaming_function(client, &arg, &ret);
+		if (ret_val == 0) {
+			memcpy(&resp_buf, ret.output, *ret.out_len);
+			*info = GET_INT32(&resp_buf);
+		} else {
+			*info = 0;	//default value
+		}
+
+		if (ret.output)
+			kfree(ret.output);
+		if (ret.out_len)
+			kfree(ret.out_len);
+
+	} while (ret_val < 0 && errCount++ < 3);
+}
+EXPORT_SYMBOL(remote_get_ftm_boot);
+

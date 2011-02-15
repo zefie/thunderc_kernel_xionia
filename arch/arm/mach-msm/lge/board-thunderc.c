@@ -62,28 +62,6 @@
  */
 extern struct msm_pm_platform_data msm7x25_pm_data[MSM_PM_SLEEP_MODE_NR];
 extern struct msm_pm_platform_data msm7x27_pm_data[MSM_PM_SLEEP_MODE_NR];
-#if 0
-struct msm_pm_platform_data msm7x27_pm_data[MSM_PM_SLEEP_MODE_NR] = {
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].supported = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].latency = 16000,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].residency = 20000,
-
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].supported = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].latency = 12000,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].residency = 20000,
-
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].supported = 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].suspend_enabled
-	    = 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].latency = 2000,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].residency = 0,
-};
-#endif
 
 /* board-specific usb data definitions */
 #ifdef CONFIG_USB_SUPPORT_LGDRIVER
@@ -166,6 +144,7 @@ struct usb_composition usb_func_composition[] = {
 		.functions = 0x1F	/* 011111      Modem,diag,NMEA,Mass,ADB */
 	},
 	{
+		
 		.product_id = 0x61CC,
 		.functions = 0x08	/* 001000      Mass */
 	},
@@ -178,6 +157,7 @@ struct msm_hsusb_platform_data msm_hsusb_pdata = {
 	.phy_info = (USB_PHY_INTEGRATED | USB_PHY_MODEL_65NM),
 	.vendor_id = 0x1004,
 	.product_name = "LG Android USB Device",
+	
 #ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 	.serial_number = "LGANDROIDLS670",
 #else
@@ -212,19 +192,10 @@ static struct platform_device lg_diag_cmd_device = {
 	},
 };
 
-#if 0				// should be modified, not using qwerty key
-static int thunderc_reboot_key_detect(void)
-{
-	if (gpio_get_value(GPIO_PP2106_IRQ) == 0)
-		return REBOOT_KEY_PRESS;
-	else
-		return REBOOT_KEY_NOT_PRESS;
-}
-
-struct lge_panic_handler_platform_data panic_handler_data = {
-	.reboot_key_detect = thunderc_reboot_key_detect,
+static struct platform_device testmode_device = {
+	.name = "testmode",
+	.id = -1,
 };
-#endif
 
 static struct platform_device *devices[] __initdata = {
 	&msm_device_smd,
@@ -236,6 +207,7 @@ static struct platform_device *devices[] __initdata = {
 	&msm_device_adspdec,
 	&lg_fw_diagcmd_device,
 	&lg_diag_cmd_device,
+	&testmode_device,
 };
 
 extern struct sys_timer msm_timer;
@@ -254,6 +226,7 @@ static struct msm_acpu_clock_platform_data msm7x2x_clock_data = {
 
 void msm_serial_debug_init(unsigned int base, int irq,
 			   struct device *clk_device, int signal_irq);
+
 
 unsigned pmem_fb_size = 0x96000;
 

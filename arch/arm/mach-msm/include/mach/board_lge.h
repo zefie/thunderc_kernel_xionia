@@ -42,7 +42,7 @@
 
 #ifdef CONFIG_ARCH_MSM7X27
 #define MSM_PMEM_MDP_SIZE	0x1B76000
-//#define MSM_PMEM_ADSP_SIZE     0xAE4000
+
 #define MSM_PMEM_ADSP_SIZE     0xE4E1C0
 #define MSM_PMEM_AUDIO_SIZE    0x5B000
 #define MSM_FB_SIZE            0x177000
@@ -56,9 +56,12 @@
 /* Using upper 1/2MB of Apps Bootloader memory*/
 #define MSM_PMEM_AUDIO_START_ADDR	0x80000ul
 
+
+#ifdef CONFIG_MACH_MSM7X27_THUNDERC_SPRINT
 /* TA charger */
-#define GISELE_TA_CHG_CURRENT	600
-#define GISELE_USB_CHG_CURRENT	400
+#define LS670_TA_CHG_CURRENT	700
+#define LS670_USB_CHG_CURRENT	400
+#endif
 
 /* board revision information */
 extern int lge_bd_rev;
@@ -259,6 +262,7 @@ struct msm_panel_hitachi_pdata {
 	int *gpio_num;
 	int initialized;
 };
+
 
 struct msm_panel_novatek_pdata {
 	int gpio;

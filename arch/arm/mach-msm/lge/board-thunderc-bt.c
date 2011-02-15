@@ -118,6 +118,7 @@ static struct platform_device msm_bt_power_device = {
 	},		
 };
 
+
 static void __init bt_power_init(void)
 {
 	int pin, rc;
@@ -130,7 +131,6 @@ static void __init bt_power_init(void)
 			printk(KERN_ERR
 				"%s: gpio_tlmm_config(%#x)=%d\n",
 				__func__, bt_config_power_on[pin], rc);
-			return -EIO;
 		}
 	}
 
@@ -156,7 +156,6 @@ static void __init bt_power_init(void)
 			printk(KERN_ERR
 				"%s: gpio_tlmm_config(%#x)=%d\n",
 				__func__, bt_config_power_off[pin], rc);
-			return -EIO;
 		}
 	}
 }

@@ -1,11 +1,19 @@
 /*
-  Program : Screen Shot
-
-  Author : khlee
-
-  Date : 2010.01.26
-*/
-/* ==========================================================================*/
+ * Copyright (c) 2010 LGE. All rights reserved.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * Program : Screen Shot
+ * Author : khlee
+ * Date : 2010.01.26
+ */
 #include <linux/module.h>
 #include <mach/lg_diag_screen_shot.h>
 #include <linux/fcntl.h> 
@@ -13,19 +21,12 @@
 #include <mach/lg_diagcmd.h>
 #include <linux/uaccess.h>
 
-
-/* ==========================================================================
-===========================================================================*/
 #define LCD_BUFFER_SIZE LCD_MAIN_WIDTH * LCD_MAIN_HEIGHT * 2
-/* ==========================================================================
-===========================================================================*/
+
 extern PACK(void *) diagpkt_alloc (diagpkt_cmd_code_type code, unsigned int length);
-/*==========================================================================*/
-/*==========================================================================*/
 
 lcd_buf_info_type lcd_buf_info;
 
-/*==========================================================================*/
 
 static void read_framebuffer(byte* pBuf)
 {
@@ -210,7 +211,7 @@ PACK (void *)LGF_PartScreenShot (
 { 
 	diag_screen_shot_type  *req_access_ptr = NULL;
 	diag_screen_shot_type  *rsp_access_ptr = NULL;
-	const rsp_len = sizeof (diag_screen_shot_type);
+	const int rsp_len = sizeof (diag_screen_shot_type);
 
 	word *src_ptr, *dst_ptr;	//Warning, *temp_ptr;
 	//Warning int x,y,row;

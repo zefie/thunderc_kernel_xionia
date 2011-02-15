@@ -1,12 +1,10 @@
 #!/bin/sh
 rm ../buildboot/zImage
 cp arch/arm/boot/zImage ../buildboot/
-cp arch/arm/boot/zImage ../kernel_updatezip_template/kernel/
 
-rm ../ramdisk/lib/modules/*
-cp drivers/net/tun.ko ../ramdisk/lib/modules/
-cp drivers/net/wireless/bcm4325/wireless.ko ../ramdisk/lib/modules/
+mkdir ../ramdisk_cyanogen-ginger/lib/ 
+mkdir ../ramdisk_cyanogen-ginger/lib/modules 
+cp drivers/net/wireless/bcm4325/wireless.ko ../ramdisk_cyanogen-ginger/lib/modules/
+cp drivers/net/tun.ko ../ramdisk_cyanogen-ginger/lib/modules/
 
-rm ../kernel_updatezip_template/system/lib/modules/*
-cp ../ramdisk/lib/modules/* ../kernel_updatezip_template/system/lib/modules/
 

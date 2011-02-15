@@ -245,6 +245,9 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 	}
 	set_bit(pdev->id, &vreg_sts);
 
+	/* if first called related to sdcc1, irq should be registered as wakeup source
+	 *      * cleaneye.kim@lge.com, 2010-02-19
+	 *           */
 	if (first_setup == 1) {
 		struct mmc_platform_data *pdata = pdev->dev.platform_data;
 		if (pdev->id == 1) {
@@ -319,6 +322,7 @@ static void __init msm7x2x_init_mmc(void)
 #endif	
 #ifdef CONFIG_MMC_MSM_SDC2_SUPPORT
 
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, BCM4325 control */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 
 	/* GPIO config */
@@ -342,6 +346,7 @@ static void __init msm7x2x_init_mmc(void)
 #else /* qualcomm or google */
     msm_add_sdcc(2, &msm7x2x_sdcc_data);
 #endif /* CONFIG_LGE_BCM432X_PATCH */
+/* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, BCM4325 control */
 
 #endif
 #ifdef CONFIG_MMC_MSM_SDC3_SUPPORT
