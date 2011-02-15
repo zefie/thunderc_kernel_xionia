@@ -498,6 +498,7 @@ source "drivers/net/wireless/wl12xx/Kconfig"
 source "drivers/net/wireless/iwmc3200wifi/Kconfig"
 #LGE_CHANGES_S, [jisung.yang@lge.com], 2010-04-24, <Add BCM4325>
 source "drivers/net/wireless/bcm4325/Kconfig"
+source "drivers/net/wireless/bcm4329/Kconfig"
 #LGE_CHANGES_E, [jisung.yang@lge.com], 2010-04-24, <Add BCM4325>
 
 endif # WLAN

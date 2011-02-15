@@ -55,13 +55,12 @@ enum kgsl_deviceid {
 };
 
 enum kgsl_user_mem_type {
-	KGSL_USER_MEM_TYPE_PMEM		= 0x00000000,
+	KGSL_USER_MEM_TYPE_PMEM = 0x00000000,
 	KGSL_USER_MEM_TYPE_ASHMEM	= 0x00000001,
-	KGSL_USER_MEM_TYPE_ADDR		= 0x00000002
+	KGSL_USER_MEM_TYPE_ADDR = 0x00000002 
 };
 
 struct kgsl_devinfo {
-
 	unsigned int device_id;
 	/* chip revision id
 	* coreid:8 majorrev:8 minorrev:8 patch:8
@@ -129,7 +128,7 @@ struct kgsl_platform_data {
 	int (*set_grp3d_async)(void);
 	const char *imem_clk_name;
 	const char *grp3d_clk_name;
-	const char *grp2d0_clk_name;
+	const char *grp2d_clk_name;
 };
 
 /* ioctls */
@@ -244,6 +243,7 @@ struct kgsl_drawctxt_destroy {
 #define IOCTL_KGSL_DRAWCTXT_DESTROY \
 	_IOW(KGSL_IOC_TYPE, 0x14, struct kgsl_drawctxt_destroy)
 
+
 /* add a block of pmem, fb, ashmem or user allocated address
  * into the GPU address space */
 struct kgsl_map_user_mem {
@@ -259,6 +259,7 @@ struct kgsl_map_user_mem {
 
 #define IOCTL_KGSL_MAP_USER_MEM \
 	_IOWR(KGSL_IOC_TYPE, 0x15, struct kgsl_map_user_mem)
+
 
 /* add a block of pmem or fb into the GPU address space */
 struct kgsl_sharedmem_from_pmem {
@@ -349,12 +350,4 @@ struct kgsl_cmdwindow_write {
 #define IOCTL_KGSL_CMDWINDOW_WRITE \
 	_IOW(KGSL_IOC_TYPE, 0x2e, struct kgsl_cmdwindow_write)
 
-#ifdef __KERNEL__
-#ifdef CONFIG_MSM_KGSL_DRM
-int kgsl_gem_obj_addr(int drm_fd, int handle, unsigned long *start,
-			unsigned long *len);
-#else
-#define kgsl_gem_obj_addr(...) 0
-#endif
-#endif
 #endif /* _MSM_KGSL_H */

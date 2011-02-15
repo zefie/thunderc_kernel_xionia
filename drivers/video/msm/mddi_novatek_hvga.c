@@ -46,9 +46,6 @@
 #define INTMSK		LCD_CONTROL_BLOCK_BASE|(0x1c)
 #define VPOS		LCD_CONTROL_BLOCK_BASE|(0xc0)
 
-static uint32 mddi_novatek_curr_vpos;
-static boolean mddi_novatek_monitor_refresh_value = FALSE;
-static boolean mddi_novatek_report_refresh_measurements = FALSE;
 static boolean is_lcd_on = -1;
 
 /* The comment from AMSS codes:
@@ -58,7 +55,6 @@ static boolean is_lcd_on = -1;
  * XXX: TODO: change this values for INNOTEK PANEL */
 static uint32 mddi_novatek_rows_per_second = 31250;
 static uint32 mddi_novatek_rows_per_refresh = 480;
-static uint32 mddi_novatek_usecs_per_refresh = 15360; /* rows_per_refresh / rows_per_second */
 extern boolean mddi_vsync_detect_enabled;
 
 static msm_fb_vsync_handler_type mddi_novatek_vsync_handler = NULL;
@@ -109,17 +105,6 @@ static struct display_table mddi_novatek_position_table[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
-static struct display_table mddi_novatek_display_on[] = {
-	// Display on sequence
-	//{0x1100, 1, {0x0000}}, // sleep out
-	//{REGFLAG_DELAY, 150, {}},
-	{0x2c00, 1, {0x0000}},
-	{0x3800, 1, {0x0000}}, // Set Idle Mode Off
-	{0x2900, 1, {0x0000}}, // Display On
-	{0x2c00, 1, {0x0000}},
-	{REGFLAG_END_OF_TABLE, 0x00, {}}
-};
-
 #if 0
 static struct display_table2 mddi_novatek_img[] = {
 	{0x2c, 16384, {}},
@@ -129,25 +114,6 @@ static struct display_table mddi_novatek_img_end[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 #endif
-static struct display_table mddi_novatek_display_off[] = {
-	// Display off sequence
-	{0x3900, 1, {0x0000}}, // Set Idle mode On
-	{0x2800, 1, {0x0000}}, // Display Off
-	{REGFLAG_DELAY, 50, {}},
-	{0x1000, 1, {0x0000}},
-	{REGFLAG_DELAY, 100, {}},
-	{REGFLAG_END_OF_TABLE, 0x00, {}}
-};
-static struct display_table mddi_novatek_sleep_mode_on_data[] = {
-	// Display off sequence
-	{0x3900, 1, {0x0000}}, // Set Idle mode On
-	{0x2800, 1, {0x0000}},
-	{REGFLAG_DELAY, 50, {}},
-	{0x1000, 4, {0x0000}},
-	{REGFLAG_DELAY, 100, {}},
-	{REGFLAG_END_OF_TABLE, 0x00, {}}
-};
-
 static struct display_table mddi_novatek_initialize[] = {
 	// Display on sequence
 	{0x3900, 1, {0x0000}}, // Set Idle Mode on
@@ -915,31 +881,6 @@ void display_table(struct display_table *table, unsigned int count)
 	
 }
 
-static void compare_table(struct display_table *table, unsigned int count)
-{
-	unsigned int i;
-
-    for(i = 0; i < count; i++) {
-		
-        unsigned reg;
-        reg = table[i].reg;
-		
-        switch (reg) {
-			
-            case REGFLAG_DELAY :              
-                break;
-				
-            case REGFLAG_END_OF_TABLE :
-                break;
-				
-            default:
-                mddi_host_register_cmds_write32(reg, table[i].count, table[i].val_list, 0, 0, 0);
-		EPRINTK("%s: reg : %x, val : %x.\n", __func__, reg, table[i].val_list[0]);
-       	}
-    }	
-}
-
-
 static void mddi_novatek_vsync_set_handler(msm_fb_vsync_handler_type handler,	/* ISR to be executed */
 					 void *arg)
 {
@@ -977,13 +918,8 @@ static void mddi_novatek_vsync_set_handler(msm_fb_vsync_handler_type handler,	/*
 static void mddi_novatek_lcd_vsync_detected(boolean detected)
 {
 	/* static timetick_type start_time = 0; */
-	static struct timeval start_time;
-	static boolean first_time = TRUE;
 	/* unit32 mdp_cnt_val = 0; */
 	/* timetick_type elapsed_us; */
-	struct timeval now;
-	uint32 elapsed_us;
-	uint32 num_vsyncs;
 
 	mddi_vsync_detect_enabled = TRUE;;
 

@@ -182,7 +182,7 @@ SUBARCH := arm
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= /home/xionia/optimustc-cs/bin/arm-none-eabi-
+CROSS_COMPILE	?= /home/xionia/optimustc-beta/usr/bin/arm-linux-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -525,7 +525,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O3 -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s 
+KBUILD_CFLAGS	+= -O2 -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s 
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile

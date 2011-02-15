@@ -1,3 +1,6 @@
+#ifdef CONFIG_SCHED_BFS
+#include "sched_bfs.c"
+#else
 /*
  *  kernel/sched.c
  *
@@ -76,7 +79,6 @@
 #include <asm/irq_regs.h>
 
 #include "sched_cpupri.h"
-#include "sched_autogroup.h"
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
@@ -347,29 +349,19 @@ struct task_group init_task_group;
 /* return group to which a task belongs */
 static inline struct task_group *task_group(struct task_struct *p)
 {
-#ifdef CONFIG_USER_SCHED
 	struct task_group *tg;
 
+#ifdef CONFIG_USER_SCHED
 	rcu_read_lock();
 	tg = __task_cred(p)->user->tg;
 	rcu_read_unlock();
-
-	return tg;
 #elif defined(CONFIG_CGROUP_SCHED)
-	struct task_group *tg;
-	struct cgroup_subsys_state *css;
-
-	css = task_subsys_state(p, cpu_cgroup_subsys_id);
-	tg = container_of(css, struct task_group, css);
-
-	return autogroup_task_group(p, tg);
+	tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
+				struct task_group, css);
 #else
-	struct task_group *tg;
-
 	tg = &init_task_group;
-
-	return tg;
 #endif
+	return tg;
 }
 
 /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
@@ -1860,7 +1852,6 @@ static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
 #include "sched_idletask.c"
 #include "sched_fair.c"
 #include "sched_rt.c"
-#include "sched_autogroup.c"
 #ifdef CONFIG_SCHED_DEBUG
 # include "sched_debug.c"
 #endif
@@ -9605,8 +9596,6 @@ void __init sched_init(void)
 	init_task_group.parent = &root_task_group;
 	list_add(&init_task_group.siblings, &root_task_group.children);
 #endif /* CONFIG_USER_SCHED */
-
-    autogroup_init(&init_task);
 #endif /* CONFIG_GROUP_SCHED */
 
 #if defined CONFIG_FAIR_GROUP_SCHED && defined CONFIG_SMP
@@ -10157,11 +10146,15 @@ void sched_destroy_group(struct task_group *tg)
 /* change task's runqueue when it moves between groups.
  *	The caller of this function should have put the task in its new group
  *	by now. This function just updates tsk->se.cfs_rq and tsk->se.parent to
- *	reflect its new group. Called with the runqueue lock held.
+ *	reflect its new group.
  */
-void __sched_move_task(struct task_struct *tsk, struct rq *rq)
+void sched_move_task(struct task_struct *tsk)
 {
 	int on_rq, running;
+	unsigned long flags;
+	struct rq *rq;
+
+	rq = task_rq_lock(tsk, &flags);
 
 	update_rq_clock(rq);
 
@@ -10184,15 +10177,6 @@ void __sched_move_task(struct task_struct *tsk, struct rq *rq)
 		tsk->sched_class->set_curr_task(rq);
 	if (on_rq)
 		enqueue_task(rq, tsk, 0, false);
-}
-
-void sched_move_task(struct task_struct *tsk)
-{
-	struct rq *rq;
-	unsigned long flags;
-
-	rq = task_rq_lock(tsk, &flags);
-	__sched_move_task(tsk, rq);
 
 	task_rq_unlock(rq, &flags);
 }
@@ -11129,3 +11113,4 @@ void synchronize_sched_expedited(void)
 EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
 
 #endif /* #else #ifndef CONFIG_SMP */
+#endif /* CONFIG_SCHED_BFS */
