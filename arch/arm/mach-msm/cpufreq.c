@@ -224,8 +224,6 @@ static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
 	cpu_work = &per_cpu(cpufreq_work, policy->cpu);
 	INIT_WORK(&cpu_work->work, set_cpu_work);
 #endif
-	cpufreq_frequency_table_get_attr(msm_freq_table, policy->cpu);
-	cpufreq_frequency_table_cpuinfo(policy, msm_freq_table);
 	return 0;
 }
 

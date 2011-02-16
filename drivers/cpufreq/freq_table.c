@@ -24,8 +24,8 @@
 int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 				    struct cpufreq_frequency_table *table)
 {
-//	unsigned int min_freq = ~0;
-//	unsigned int max_freq = 0;
+	unsigned int min_freq = ~0;
+	unsigned int max_freq = 0;
 	unsigned int i;
 
 	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
@@ -37,14 +37,14 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 		}
 		dprintk("table entry %u: %u kHz, %u index\n",
 					i, freq, table[i].index);
-//		if (freq < min_freq)
-//			min_freq = freq;
-//		if (freq > max_freq)
-//			max_freq = freq;
+		if (freq < min_freq)
+			min_freq = freq;
+		if (freq > max_freq)
+			max_freq = freq;
 	}
 
-//	policy->min = policy->cpuinfo.min_freq = min_freq;
-//	policy->max = policy->cpuinfo.max_freq = max_freq;
+	policy->min = policy->cpuinfo.min_freq = min_freq;
+	policy->max = policy->cpuinfo.max_freq = max_freq;
 
 	if (policy->min == ~0)
 		return -EINVAL;
