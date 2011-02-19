@@ -182,7 +182,7 @@ static int AMI304_Chipset_Init(int mode, int chipset)
 	u8 regaddr;
 	u8 ctrl1, ctrl2, ctrl3;
 	unsigned char ctrl4[2];
-	
+
 	regaddr = AMI304_REG_CTRL1;
 	i2c_master_send(ami304_i2c_client, &regaddr, 1);
 	i2c_master_recv(ami304_i2c_client, &ctrl1, 1);
@@ -190,15 +190,15 @@ static int AMI304_Chipset_Init(int mode, int chipset)
 	regaddr = AMI304_REG_CTRL2;
 	i2c_master_send(ami304_i2c_client, &regaddr, 1);
 	i2c_master_recv(ami304_i2c_client, &ctrl2, 1);
-	
+
 	regaddr = AMI304_REG_CTRL3;
 	i2c_master_send(ami304_i2c_client, &regaddr, 1);
-	i2c_master_recv(ami304_i2c_client, &ctrl3, 1);		
+	i2c_master_recv(ami304_i2c_client, &ctrl3, 1);
 
 	regaddr = AMI304_REG_CTRL4; //2 bytes
 	i2c_master_send(ami304_i2c_client, &regaddr, 1);
 	i2c_master_recv(ami304_i2c_client, &(ctrl4[0]), 2);
-	
+
 	databuf[0] = AMI304_REG_CTRL1;
 	if( mode == AMI304_FORCE_MODE ) {
 		databuf[1] = ctrl1 | AMI304_CTRL1_PC1 | AMI304_CTRL1_FS1_FORCE;

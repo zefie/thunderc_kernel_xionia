@@ -61,8 +61,8 @@ static unsigned int keypad_col_gpios[] = {38, 37,36};
 
 #if defined(CONFIG_MACH_MSM7X27_THUNDERC_SPRINT)
 static const unsigned short keypad_keymap_thunder[9] = {
-	[KEYMAP_INDEX(0, 0)] = KEY_HOME,
-	[KEYMAP_INDEX(0, 1)] = KEY_MENU,
+	[KEYMAP_INDEX(0, 0)] = KEY_MENU,
+	[KEYMAP_INDEX(0, 1)] = KEY_HOME,
 	[KEYMAP_INDEX(0, 2)] = KEY_VOLUMEUP,
 	[KEYMAP_INDEX(1, 0)] = KEY_SEARCH,
 	[KEYMAP_INDEX(1, 1)] = KEY_BACK,
