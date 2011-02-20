@@ -101,8 +101,13 @@ AFLAGS_THUMB2	:=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
 endif
 
 # Need -Uarm for gcc < 3.x
+ifeq ($(CC_VERSION),4.5.1)
 KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_THUMB2) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s -Uarm
 KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_THUMB2) $(arch-y) $(tune-y) -include asm/unified.h -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s 
+else
+KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_THUMB2) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -mfpu=vfp -mtune=arm1136jf-s -Uarm
+KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_THUMB2) $(arch-y) $(tune-y) -include asm/unified.h -mfpu=vfp -mtune=arm1136jf-s 
+endif
 
 CHECKFLAGS	+= -D__arm__
 
