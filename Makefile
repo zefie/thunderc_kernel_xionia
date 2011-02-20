@@ -333,6 +333,8 @@ CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
+CC_VERSION	= $(shell $(CONFIG_SHELL) scripts/gcc-version2.sh '$(CC)')
+
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
@@ -522,10 +524,19 @@ endif # $(dot-config)
 # Defaults vmlinux but it is usually overridden in the arch makefile
 all: vmlinux
 
-ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os
+
+ifeq ($(CC_VERSION),"4.5.1")
+	ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+		KBUILD_CFLAGS	+= -Os -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s
+	else
+		KBUILD_CFLAGS	+= -O2 -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s 
+	endif
 else
-KBUILD_CFLAGS	+= -O2 -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s 
+	ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+		KBUILD_CFLAGS	+= -Os -mfpu=vfp -mtune=arm1136jf-s
+	else
+		KBUILD_CFLAGS	+= -O2 -mfpu=vfp -mtune=arm1136jf-s 
+	endif
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
