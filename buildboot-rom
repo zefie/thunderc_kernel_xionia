@@ -1,8 +1,0 @@
-#!/bin/sh
-ZEF_DATE="`date`"
-
-./cpkernel && \
-cd ../ramdisk_public && \
-../mkoptinitrd && \
-cd ../buildboot && \
-./mkbootimg.sh

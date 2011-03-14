@@ -1,9 +1,15 @@
 #!/bin/sh
-rm ../buildboot/zImage
+rm -f ../buildboot/zImage
 cp arch/arm/boot/zImage ../buildboot/
-cp arch/arm/boot/zImage ../kernel_updatezip_template/kernel/
+cp arch/arm/boot/zImage ../kernel_updatezip_template-anykernel/kernel/
+cp drivers/net/tun.ko ../kernel_updatezip_template-anykernel/system/lib/modules/
+cp drivers/net/wireless/bcm4325/wireless.ko ../kernel_updatezip_template-anykernel/system/lib/modules/
+cp arch/arm/mach-msm/dma_test.ko ../kernel_updatezip_template-anykernel/system/lib/modules/
+cp net/ipv4/tcp_bic.ko ../kernel_updatezip_template-anykernel/system/lib/modules/
+cp net/ipv4/tcp_htcp.ko ../kernel_updatezip_template-anykernel/system/lib/modules/
+cp net/ipv4/tcp_westwood.ko ../kernel_updatezip_template-anykernel/system/lib/modules/
 
-rm ../ramdisk/lib/modules/*
+rm -f ../ramdisk/lib/modules/*
 cp drivers/net/tun.ko ../ramdisk/lib/modules/
 cp drivers/net/wireless/bcm4325/wireless.ko ../ramdisk/lib/modules/
 cp arch/arm/mach-msm/dma_test.ko ../ramdisk/lib/modules/
@@ -12,7 +18,7 @@ cp net/ipv4/tcp_htcp.ko ../ramdisk/lib/modules/
 cp net/ipv4/tcp_westwood.ko ../ramdisk/lib/modules/
 
 
-rm ../ramdisk_public/lib/modules/*
+rm -f ../ramdisk_public/lib/modules/*
 cp drivers/net/tun.ko ../ramdisk_public/lib/modules/
 cp drivers/net/wireless/bcm4325/wireless.ko ../ramdisk_public/lib/modules/
 cp arch/arm/mach-msm/dma_test.ko ../ramdisk_public/lib/modules/
@@ -20,6 +26,6 @@ cp net/ipv4/tcp_bic.ko ../ramdisk_public/lib/modules/
 cp net/ipv4/tcp_htcp.ko ../ramdisk_public/lib/modules/
 cp net/ipv4/tcp_westwood.ko ../ramdisk_public/lib/modules/
 
-rm ../kernel_updatezip_template/system/lib/modules/*
+rm -f ../kernel_updatezip_template/system/lib/modules/*
 cp ../ramdisk/lib/modules/* ../kernel_updatezip_template/system/lib/modules/
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-rm ../buildboot/zImage
+rm -r ../buildboot/zImage
 cp arch/arm/boot/zImage ../buildboot/
 
 mkdir ../ramdisk_cyanogen-ginger/lib/ 

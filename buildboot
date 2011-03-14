@@ -1,17 +1,22 @@
 #!/bin/sh
 ZEF_DATE="`date`"
 
+echo "*** Copying kernel and module files..."
 ./cpkernel && \
+echo "*** Building ramdisk for boot.img..."
 cd ../stockVC_kernel_ramdisk && \
 ../mkoptinitrd && \
+echo "*** Building boot.img..."
 cd ../buildboot && \
 ./mkbootimg.sh
 
+echo "*** Preparing files for update.zip..."
+
 cd /home/zefie/optimusdev/optimus/kernel_updatezip_template
-rm /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/boot.img
-rm /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/zImage
+rm -f /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/boot.img
+rm -f /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/zImage
 cp /media/dropbox/boot.img /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/boot.img
-rm META-INF/com/google/android/updater-script
+rm -f META-INF/com/google/android/updater-script
 
 echo "ui_print(\"Extracting System Files...\");" >> META-INF/com/google/android/updater-script
 echo "set_progress(1.000000);" >> META-INF/com/google/android/updater-script
@@ -28,9 +33,26 @@ echo "ui_print(\"$ZEF_DATE\");" >> META-INF/com/google/android/updater-script
 echo "ui_print(\"-------------------\");" >> META-INF/com/google/android/updater-script
 echo "ui_print(\"Done!\");" >> META-INF/com/google/android/updater-script
 
+echo "*** Building boot.img edition..."
+
+rm -f /tmp/kernel.zip
 zip -9rq /tmp/kernel.zip *
 
-rm /media/dropbox/xionia.zip
-java -jar /home/zefie/optimusdev/optimus/java/signapk.jar /home/zefie/optimusdev/optimus/java/testkey.x509.pem /home/zefie/optimusdev/optimus/java/testkey.pk8 /tmp/kernel.zip /media/dropbox/xionia.zip
-rm /tmp/kernel.zip
-ls -l /media/dropbox/xionia.zip
+echo "*** Building experimental edition..."
+
+cd /home/zefie/optimusdev/optimus/kernel_updatezip_template-anykernel
+rm -f /tmp/kernel2.zip
+zip -9rq /tmp/kernel2.zip *
+
+echo "Generating /media/dropbox/xionia_kernel_XXX_bootimg.zip..."
+rm -f /media/dropbox/xionia_kernel_XXX_bootimg.zip
+java -jar /home/zefie/optimusdev/optimus/java/signapk.jar /home/zefie/optimusdev/optimus/java/testkey.x509.pem /home/zefie/optimusdev/optimus/java/testkey.pk8 /tmp/kernel.zip /media/dropbox/xionia_kernel_XXX_bootimg.zip
+rm -f /tmp/kernel.zip
+
+ls -l /media/dropbox/xionia_kernel_XXX_bootimg.zip
+
+echo "Generating /media/dropbox/xionia_kernel_XXX_experimental.zip..."
+rm -f /media/dropbox/xionia_kernel_XXX_experimental.zip
+java -jar /home/zefie/optimusdev/optimus/java/signapk.jar /home/zefie/optimusdev/optimus/java/testkey.x509.pem /home/zefie/optimusdev/optimus/java/testkey.pk8 /tmp/kernel2.zip /media/dropbox/xionia_kernel_XXX_experimental.zip
+rm -f /tmp/kernel2.zip
+ls -l /media/dropbox/xionia_kernel_XXX_experimental.zip
