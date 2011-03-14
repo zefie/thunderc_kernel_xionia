@@ -7,10 +7,10 @@ cd ../stockVC_kernel_ramdisk && \
 cd ../buildboot && \
 ./mkbootimg.sh
 
-cd /home/xionia/optimus/kernel_updatezip_template
-rm /home/xionia/optimus/kernel_updatezip_template/kernel/boot.img
-rm /home/xionia/optimus/kernel_updatezip_template/kernel/zImage
-cp /media/dropbox/boot.img /home/xionia/optimus/kernel_updatezip_template/kernel/boot.img
+cd /home/zefie/optimusdev/optimus/kernel_updatezip_template
+rm /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/boot.img
+rm /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/zImage
+cp /media/dropbox/boot.img /home/zefie/optimusdev/optimus/kernel_updatezip_template/kernel/boot.img
 rm META-INF/com/google/android/updater-script
 
 echo "ui_print(\"Extracting System Files...\");" >> META-INF/com/google/android/updater-script
@@ -31,6 +31,6 @@ echo "ui_print(\"Done!\");" >> META-INF/com/google/android/updater-script
 zip -9rq /tmp/kernel.zip *
 
 rm /media/dropbox/xionia.zip
-java -jar /home/xionia/optimus/java/signapk.jar /home/xionia/optimus/java/testkey.x509.pem /home/xionia/optimus/java/testkey.pk8 /tmp/kernel.zip /media/dropbox/xionia.zip
+java -jar /home/zefie/optimusdev/optimus/java/signapk.jar /home/zefie/optimusdev/optimus/java/testkey.x509.pem /home/zefie/optimusdev/optimus/java/testkey.pk8 /tmp/kernel.zip /media/dropbox/xionia.zip
 rm /tmp/kernel.zip
 ls -l /media/dropbox/xionia.zip

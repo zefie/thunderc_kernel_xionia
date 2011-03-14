@@ -6,8 +6,16 @@ mkdir ../ramdisk_cyanogen-ginger/lib/
 mkdir ../ramdisk_cyanogen-ginger/lib/modules 
 cp drivers/net/wireless/bcm4325/wireless.ko ../ramdisk_cyanogen-ginger/lib/modules/
 cp drivers/net/tun.ko ../ramdisk_cyanogen-ginger/lib/modules/
+cp arch/arm/mach-msm/dma_test.ko ../ramdisk_cyanogen-ginger/lib/modules/
+cp net/ipv4/tcp_bic.ko ../ramdisk_cyanogen-ginger/lib/modules/
+cp net/ipv4/tcp_htcp.ko ../ramdisk_cyanogen-ginger/lib/modules/
+cp net/ipv4/tcp_westwood.ko ../ramdisk_cyanogen-ginger/lib/modules/
 
 cp drivers/net/wireless/bcm4325/wireless.ko ../../cyanogen-ginger/device/lge/thunderc/files/
+cp arch/arm/mach-msm/dma_test.ko ../../cyanogen-ginger/device/lge/thunderc/files/
+cp net/ipv4/tcp_bic.ko ../../cyanogen-ginger/device/lge/thunderc/files/
+cp net/ipv4/tcp_htcp.ko ../../cyanogen-ginger/device/lge/thunderc/files/
+cp net/ipv4/tcp_westwood.ko ../../cyanogen-ginger/device/lge/thunderc/files/
 cp drivers/net/tun.ko ../../cyanogen-ginger/device/lge/thunderc/files/
 cp arch/arm/boot/zImage ../../cyanogen-ginger/device/lge/thunderc/files/
 
