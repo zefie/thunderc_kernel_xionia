@@ -263,22 +263,15 @@ static void mcs6000_work(struct work_struct *work)
 		if (touch_pressed) {
 #ifdef LG_FW_MULTI_TOUCH
 			if(s_input_type == MULTI_POINT_TOUCH) {
-				DMSG("%s: multi touch release...(%d, %d), (%d, %d)\n", 
-						__FUNCTION__,pre_x1,pre_y1,pre_x2,pre_y2);
-				mcs6000_multi_ts_event_touch(pre_x1, pre_y1, pre_x2, pre_y2, 
-						RELEASED, dev);
+				mcs6000_multi_ts_event_touch(pre_x1, pre_y1, pre_z1, pre_x2, pre_y2, pre_z2, RELEASED, dev);
 				s_input_type = NON_TOUCHED_STATE; 
 				pre_x1 = -1; pre_y1 = -1; pre_x2 = -1; pre_y2 = -1;
 			} else {
-				DMSG("%s: single touch release... %d, %d\n", __FUNCTION__, 
-						pre_x1, pre_y1);
-				mcs6000_multi_ts_event_touch(pre_x1, pre_y1, -1, -1, 
-						RELEASED, dev);
+				mcs6000_multi_ts_event_touch(pre_x1, pre_y1, pre_z1, -1, -1, -1, RELEASED, dev);
 				pre_x1 = -1; pre_y1 = -1;
 			}
 			touch_pressed = 0;
 #else
-			DMSG("%s: single release... %d, %d\n", __FUNCTION__, pre_x1, pre_y1);
 			mcs6000_single_ts_event_touch (pre_x1, pre_y1, RELEASED, dev);
 			pre_x1 = -1; pre_y1 = -1;
 			touch_pressed = 0;
@@ -362,23 +355,22 @@ static void mcs6000_work(struct work_struct *work)
 				 flipdx=0;
 				}
 				if(abs(x1-x2) <= 35 && flipdy ){
-                                
-				 x1=x2; //trying to make the process smoother 
+				 x1=x2; //trying to make the process smoother
 				 flipy=!flipy;
 				 flipdy=0;
 				}
-				
+
 				if(flipx)
-				 swap(x1,x2); 
+				 swap(x1,x2);
 
 				if(flipy)
 				 swap(y1,y2);
 
 				if(abs(y1-y2) > 35)
-				 flipdx=1; 
+				 flipdx=1;
 
 				if(abs(x1-x2) > 35)
-				 flipdy=1; 
+				 flipdy=1;
 				mcs6000_multi_ts_event_touch(x1, y1, z1, x2, y2, z2, PRESSED, dev);
 				pre_x1 = x1;
 				pre_y1 = y1;
@@ -389,7 +381,7 @@ static void mcs6000_work(struct work_struct *work)
 			}
 			else if(input_type == SINGLE_POINT_TOUCH) {
 				mcs6000_multi_ts_event_touch(x1, y1, z1, -1, -1, -1, PRESSED, dev);
-				s_input_type = SINGLE_POINT_TOUCH;				
+				s_input_type = SINGLE_POINT_TOUCH;
 				// LGE_CHANGE [dojip.kim@lge.com] 2010-08-12
 				pre_x1 = x1;
 				pre_y1 = y1;
