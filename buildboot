@@ -4,7 +4,7 @@ ZEF_DATE="`date`"
 echo "*** Copying kernel and module files..."
 ./cpkernel && \
 echo "*** Building ramdisk for boot.img..."
-cd ../ramdisk && \
+cd ../stockVC_kernel_ramdisk && \
 ../mkoptinitrd && \
 echo "*** Building boot.img..."
 cd ../buildboot && \
