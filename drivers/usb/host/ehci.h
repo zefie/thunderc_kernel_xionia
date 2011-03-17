@@ -87,8 +87,9 @@ struct ehci_hcd {			/* one per controller */
 	int			next_uframe;	/* scan periodic, start here */
 	unsigned		periodic_sched;	/* periodic activity count */
 
-	/* list of itds completed while clock_frame was still active */
+	/* list of itds & sitds completed while clock_frame was still active */
 	struct list_head	cached_itd_list;
+	struct list_head	cached_sitd_list;
 	unsigned		clock_frame;
 
 	/* per root hub port */
@@ -129,6 +130,7 @@ struct ehci_hcd {			/* one per controller */
 	unsigned		has_amcc_usb23:1;
 	unsigned		need_io_watchdog:1;
 	unsigned		broken_periodic:1;
+	unsigned		amd_l1_fix:1;
 
 	/* required for usb32 quirk */
 	#define OHCI_CTRL_HCFS          (3 << 6)
@@ -195,7 +197,7 @@ timer_action_done (struct ehci_hcd *ehci, enum ehci_timer_action action)
 	clear_bit (action, &ehci->actions);
 }
 
-static void free_cached_itd_list(struct ehci_hcd *ehci);
+static void free_cached_lists(struct ehci_hcd *ehci);
 
 /*-------------------------------------------------------------------------*/
 

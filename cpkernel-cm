@@ -2,21 +2,43 @@
 rm -r ../buildboot/zImage
 cp arch/arm/boot/zImage ../buildboot/
 
-mkdir ../ramdisk_cyanogen-ginger/lib/ 
-mkdir ../ramdisk_cyanogen-ginger/lib/modules 
-cp drivers/net/wireless/bcm4325/wireless.ko ../ramdisk_cyanogen-ginger/lib/modules/
-cp drivers/net/tun.ko ../ramdisk_cyanogen-ginger/lib/modules/
-cp arch/arm/mach-msm/dma_test.ko ../ramdisk_cyanogen-ginger/lib/modules/
-cp net/ipv4/tcp_bic.ko ../ramdisk_cyanogen-ginger/lib/modules/
-cp net/ipv4/tcp_htcp.ko ../ramdisk_cyanogen-ginger/lib/modules/
-cp net/ipv4/tcp_westwood.ko ../ramdisk_cyanogen-ginger/lib/modules/
+# Gingerbread 
+mkdir ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/
+mkdir ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
 
-cp drivers/net/wireless/bcm4325/wireless.ko ../../cyanogen-ginger/device/lge/thunderc/files/
-cp arch/arm/mach-msm/dma_test.ko ../../cyanogen-ginger/device/lge/thunderc/files/
-cp net/ipv4/tcp_bic.ko ../../cyanogen-ginger/device/lge/thunderc/files/
-cp net/ipv4/tcp_htcp.ko ../../cyanogen-ginger/device/lge/thunderc/files/
-cp net/ipv4/tcp_westwood.ko ../../cyanogen-ginger/device/lge/thunderc/files/
-cp drivers/net/tun.ko ../../cyanogen-ginger/device/lge/thunderc/files/
-cp arch/arm/boot/zImage ../../cyanogen-ginger/device/lge/thunderc/files/
+cp drivers/net/wireless/bcm4325/wireless.ko ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
+cp drivers/net/tun.ko ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
+cp arch/arm/mach-msm/dma_test.ko ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
+cp net/ipv4/tcp_bic.ko ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
+cp net/ipv4/tcp_htcp.ko ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
+cp net/ipv4/tcp_westwood.ko ../../cyanogen/gingerbread/out/target/product/thunderc/root/lib/modules/
+
+cp drivers/net/wireless/bcm4325/wireless.ko ../../cyanogen/gingerbread/device/lge/thunderc/files/
+cp arch/arm/mach-msm/dma_test.ko ../../cyanogen/gingerbread/device/lge/thunderc/files/
+cp net/ipv4/tcp_bic.ko ../../cyanogen/gingerbread/device/lge/thunderc/files/
+cp net/ipv4/tcp_htcp.ko ../../cyanogen/gingerbread/device/lge/thunderc/files/
+cp net/ipv4/tcp_westwood.ko ../../cyanogen/gingerbread/device/lge/thunderc/files/
+cp drivers/net/tun.ko ../../cyanogen/gingerbread/device/lge/thunderc/files/
+cp arch/arm/boot/zImage ../../cyanogen/gingerbread/device/lge/thunderc/files/
+
+
+# Froyo 
+mkdir ../../cyanogen/froyo/out/target/product/thunderc/root/lib/
+mkdir ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+
+cp drivers/net/wireless/bcm4325/wireless.ko ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+cp drivers/net/tun.ko ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+cp arch/arm/mach-msm/dma_test.ko ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+cp net/ipv4/tcp_bic.ko ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+cp net/ipv4/tcp_htcp.ko ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+cp net/ipv4/tcp_westwood.ko ../../cyanogen/froyo/out/target/product/thunderc/root/lib/modules/
+
+cp drivers/net/wireless/bcm4325/wireless.ko ../../cyanogen/froyo/device/lge/thunderc/files/
+cp arch/arm/mach-msm/dma_test.ko ../../cyanogen/froyo/device/lge/thunderc/files/
+cp net/ipv4/tcp_bic.ko ../../cyanogen/froyo/device/lge/thunderc/files/
+cp net/ipv4/tcp_htcp.ko ../../cyanogen/froyo/device/lge/thunderc/files/
+cp net/ipv4/tcp_westwood.ko ../../cyanogen/froyo/device/lge/thunderc/files/
+cp drivers/net/tun.ko ../../cyanogen/froyo/device/lge/thunderc/files/
+cp arch/arm/boot/zImage ../../cyanogen/froyo/device/lge/thunderc/files/
 
 

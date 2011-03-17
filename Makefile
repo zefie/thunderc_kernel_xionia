@@ -1,7 +1,7 @@
 VERSION = 2
 PATCHLEVEL = 6
 SUBLEVEL = 32
-EXTRAVERSION = .26
+EXTRAVERSION = .33
 NAME = Man-Eating Seals of Antiquity
 
 # *DOCUMENTATION*
@@ -525,7 +525,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2 -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s 
+KBUILD_CFLAGS	+= -O2 -mfpu=vfp -mfloat-abi=hard -mtune=arm1136jf-s
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile

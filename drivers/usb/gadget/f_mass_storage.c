@@ -67,14 +67,12 @@
 #include <linux/freezer.h>
 #include <linux/utsname.h>
 #include <linux/wakelock.h>
-#include <linux/platform_device.h>
 
 #include <linux/usb.h>
 #include <linux/usb_usual.h>
 #include <linux/usb/ch9.h>
 #include <linux/usb/composite.h>
 #include <linux/usb/gadget.h>
-#include <linux/usb/android.h>
 
 #include "f_mass_storage.h"
 #include "gadget_chips.h"
@@ -305,7 +303,6 @@ enum data_direction {
 	DATA_DIR_NONE
 };
 int can_stall = 1;
-static struct usb_mass_storage_platform_data *pdata;
 
 struct fsg_dev {
 	struct usb_function function;
@@ -2994,7 +2991,7 @@ static void fsg_function_disable(struct usb_function *f)
 }
 
 int mass_storage_function_add(struct usb_composite_dev *cdev,
-	struct usb_configuration *c)
+	struct usb_configuration *c, int nluns)
 {
 	int		rc;
 	struct fsg_dev	*fsg;
@@ -3004,6 +3001,7 @@ int mass_storage_function_add(struct usb_composite_dev *cdev,
 	if (rc)
 		return rc;
 	fsg = the_fsg;
+	fsg->nluns = nluns;
 
 	spin_lock_init(&fsg->lock);
 	init_rwsem(&fsg->filesem);
@@ -3029,17 +3027,6 @@ int mass_storage_function_add(struct usb_composite_dev *cdev,
 	fsg->function.setup = fsg_function_setup;
 	fsg->function.set_alt = fsg_function_set_alt;
 	fsg->function.disable = fsg_function_disable;
-	if (pdata) {
-		if (pdata->vendor)
-			fsg->vendor = pdata->vendor;
-
-		if (pdata->product)
-			fsg->product = pdata->product;
-
-		if (pdata->release)
-			fsg->release = pdata->release;
-		fsg->nluns = pdata->nluns;
-	}
 
 	rc = usb_add_function(c, &fsg->function);
 	if (rc != 0)
@@ -3054,21 +3041,3 @@ err_switch_dev_register:
 
 	return rc;
 }
-static int __init fsg_probe(struct platform_device *pdev)
-{
-	pdata = pdev->dev.platform_data;
-
-	return 0;
-}
-
-static struct platform_driver fsg_platform_driver = {
-	.driver = { .name = "usb_mass_storage", },
-	.probe = fsg_probe,
-};
-static int __init fsg_init(void)
-{
-	return platform_driver_register(&fsg_platform_driver);
-}
-module_init(fsg_init);
-
-MODULE_LICENSE("GPL v2");

@@ -247,6 +247,11 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
 	vma->vm_start = vma->vm_end - PAGE_SIZE;
 	vma->vm_flags = VM_STACK_FLAGS;
 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+
+	err = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
+	if (err)
+		goto err;
+
 	err = insert_vm_struct(mm, vma);
 	if (err)
 		goto err;
@@ -1392,8 +1397,6 @@ int do_execve(char * filename,
 	retval = search_binary_handler(bprm,regs);
 	if (retval < 0)
 		goto out;
-
-	current->stack_start = current->mm->start_stack;
 
 	/* execve succeeded */
 	current->fs->in_exec = 0;

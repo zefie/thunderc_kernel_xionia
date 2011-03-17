@@ -85,7 +85,7 @@ static void op_mux_switch_ctrl(struct op_x86_model_spec const *model,
 	/* enable active counters */
 	for (i = 0; i < NUM_COUNTERS; ++i) {
 		int virt = op_x86_phys_to_virt(i);
-		if (!counter_config[virt].enabled)
+		if (!reset_value[virt])
 			continue;
 		rdmsrl(msrs->controls[i].addr, val);
 		val &= model->reserved;
@@ -105,15 +105,11 @@ static void op_amd_fill_in_addresses(struct op_msrs * const msrs)
 	for (i = 0; i < NUM_COUNTERS; i++) {
 		if (reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i))
 			msrs->counters[i].addr = MSR_K7_PERFCTR0 + i;
-		else
-			msrs->counters[i].addr = 0;
 	}
 
 	for (i = 0; i < NUM_CONTROLS; i++) {
 		if (reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i))
 			msrs->controls[i].addr = MSR_K7_EVNTSEL0 + i;
-		else
-			msrs->controls[i].addr = 0;
 	}
 }
 
@@ -125,7 +121,8 @@ static void op_amd_setup_ctrs(struct op_x86_model_spec const *model,
 
 	/* setup reset_value */
 	for (i = 0; i < NUM_VIRT_COUNTERS; ++i) {
-		if (counter_config[i].enabled)
+		if (counter_config[i].enabled
+		    && msrs->counters[op_x86_virt_to_phys(i)].addr)
 			reset_value[i] = counter_config[i].count;
 		else
 			reset_value[i] = 0;
@@ -150,9 +147,7 @@ static void op_amd_setup_ctrs(struct op_x86_model_spec const *model,
 	/* enable active counters */
 	for (i = 0; i < NUM_COUNTERS; ++i) {
 		int virt = op_x86_phys_to_virt(i);
-		if (!counter_config[virt].enabled)
-			continue;
-		if (!msrs->counters[i].addr)
+		if (!reset_value[virt])
 			continue;
 
 		/* setup counter registers */
@@ -386,16 +381,6 @@ static int init_ibs_nmi(void)
 		return 1;
 	}
 
-#ifdef CONFIG_NUMA
-	/* Sanity check */
-	/* Works only for 64bit with proper numa implementation. */
-	if (nodes != num_possible_nodes()) {
-		printk(KERN_DEBUG "Failed to setup CPU node(s) for IBS, "
-			"found: %d, expected %d",
-			nodes, num_possible_nodes());
-		return 1;
-	}
-#endif
 	return 0;
 }
 

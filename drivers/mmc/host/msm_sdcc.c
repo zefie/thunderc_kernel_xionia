@@ -37,7 +37,6 @@
 #include <linux/debugfs.h>
 #include <linux/io.h>
 #include <linux/memory.h>
-#include <linux/gpio.h>
 
 #include <asm/cacheflush.h>
 #include <asm/div64.h>

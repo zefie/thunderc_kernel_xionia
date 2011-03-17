@@ -1,0 +1,10 @@
+--- drivers/rtc/class.c
++++ drivers/rtc/class.c
+@@ -226,6 +226,7 @@
+ {
+ 	rtc_dev_exit();
+ 	class_destroy(rtc_class);
++	idr_destroy(&rtc_idr);
+ }
+ 
+ subsys_initcall(rtc_init);

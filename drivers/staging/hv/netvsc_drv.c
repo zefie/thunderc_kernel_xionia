@@ -296,6 +296,7 @@ static void netvsc_linkstatus_callback(struct hv_device *device_obj,
 	if (status == 1) {
 		netif_carrier_on(net);
 		netif_wake_queue(net);
+		netif_notify_peers(net);
 	} else {
 		netif_carrier_off(net);
 		netif_stop_queue(net);
@@ -416,8 +417,7 @@ static int netvsc_probe(struct device *device)
 	if (!net_drv_obj->Base.OnDeviceAdd)
 		return -1;
 
-	net = alloc_netdev(sizeof(struct net_device_context), "seth%d",
-			   ether_setup);
+	net = alloc_etherdev(sizeof(struct net_device_context));
 	if (!net)
 		return -1;
 
